@@ -1,0 +1,245 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>执行记录 - 河图智弈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0&display=swap" rel="stylesheet">
+<style>
+.material-symbols-outlined{font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;font-size:20px;display:inline-block;line-height:1;text-transform:none;letter-spacing:normal;word-wrap:normal;white-space:nowrap;direction:ltr;-webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased;}
+button,input,select{font-family:inherit;font-size:inherit;outline:none;border:none;background:transparent;}
+.flex{display:flex;} .items-center{align-items:center;} .justify-center{justify-content:center;}
+.gap-1{gap:4px;} .gap-2{gap:8px;} .gap-3{gap:12px;} .gap-4{gap:16px;}
+.cursor-pointer{cursor:pointer;} .w-8{width:32px;} .h-8{height:32px;} .w-px{width:1px;}
+.rounded-full{border-radius:9999px;} .text-right{text-align:right;} .leading-tight{line-height:1.25;}
+.brand-logo{width:34px;height:34px;border-radius:50%;background:#fff;border:2px solid #D4B86A;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;box-shadow:0 0 0 3px rgba(212,184,106,0.15);}
+.brand-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.header-brand{width:186px;flex-shrink:0;}
+.header-divider{height:32px;width:1px;background:rgba(255,255,255,0.2);margin:0 4px;}
+.user-name{color:#FFF;font-size:14px;font-weight:500;}
+.user-role{color:rgba(255,255,255,0.6);font-size:11px;}
+.user-avatar{width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.85);}
+html, body { height:100%; margin:0; padding:0; }
+body { font-family:Inter,"Noto Serif SC",sans-serif; background:#F8FAFD; color:#23344D; display:flex; flex-direction:column; }
+.app-header { height:60px; background:linear-gradient(135deg,#0E2A3E 0%,#1A4966 50%,#235A7D 100%); border-bottom:2px solid #D4B86A; display:flex; align-items:center; justify-content:space-between; padding:0 20px; position:sticky; top:0; z-index:100; box-shadow:0 2px 12px rgba(0,30,60,0.15); }
+.app-header::before { content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,rgba(90,180,255,0.5) 30%,rgba(212,184,106,0.7) 60%,rgba(90,180,255,0.5) 70%,transparent); }
+.header-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; color:#C8D6E5; cursor:pointer; border-radius:8px; transition:all .2s; }
+.header-btn:hover { background:rgba(255,255,255,0.12); color:#FFF; }
+.crumb-sep { width:1px; height:16px; background:linear-gradient(180deg,#D4B86A,rgba(212,184,106,0.3)); margin:0 8px; }
+.crumb-item { display:flex; align-items:center; gap:6px; color:rgba(255,255,255,0.7); font-size:14px; }
+.crumb-item.active { color:#FFF; font-weight:600; }
+.app-sidebar { width:220px; min-height:calc(100vh - 60px); background:linear-gradient(180deg,#1A4966 0%,#0E3A5A 40%,#0A2D45 100%); border-right:1px solid rgba(212,184,106,0.25); position:relative; overflow:hidden; transition:width .22s ease; }
+.app-sidebar.is-collapsed { width:64px; }
+.app-sidebar::before { content:""; position:absolute; inset:0; pointer-events:none; opacity:0.08; background-image:radial-gradient(ellipse 80% 40% at 0% 20%,rgba(80,160,240,0.6) 0%,transparent 70%),radial-gradient(ellipse 60% 30% at 100% 70%,rgba(160,120,255,0.5) 0%,transparent 70%); }
+.app-sidebar nav { position:relative; z-index:1; padding:16px 8px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:12px 12px 12px 14px; color:rgba(255,255,255,0.7); font-size:14px; border-radius:8px; cursor:pointer; margin-bottom:2px; transition:all .18s ease; text-decoration:none; }
+.nav-item:hover { color:#FFF; background:rgba(255,255,255,0.08); }
+.nav-item.active { background:linear-gradient(90deg,rgba(42,118,201,0.25) 0%,rgba(42,118,201,0.08) 100%); color:#FFF; font-weight:600; border-left:3px solid #D4B86A; }
+.nav-sub { padding-left:26px; }
+.nav-sub .nav-item { padding:9px 10px; font-size:13.5px; }
+.app-sidebar.is-collapsed .nav-item { justify-content:center; padding-left:0; padding-right:0; }
+.app-sidebar.is-collapsed .nav-item span:not(.material-symbols-outlined) { display:none; }
+.app-sidebar.is-collapsed .nav-sub { display:none; }
+.app-sidebar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:210px;z-index:0;pointer-events:none;opacity:.55;background:bottom center/100% auto no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='210' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='rgba(120,200,255,0.35)' stroke-width='1.2'%3E%3Cpath d='M-20 150 Q40 118 100 150 T240 150 T380 150'/%3E%3Cpath d='M-20 172 Q40 140 100 172 T240 172 T380 172'/%3E%3Cpath d='M-20 194 Q40 162 100 194 T240 194 T380 194'/%3E%3C/g%3E%3C/svg%3E");}
+.app-body { display:flex; flex:1; min-height:0; }
+.app-main { flex:1; display:flex; flex-direction:column; overflow:auto; position:relative; background:linear-gradient(135deg,#E7EFF8 0%,#F1F6FC 45%,#E4EDF6 100%); }
+.app-main::before { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(circle at 16% 10%,rgba(42,118,201,0.10),transparent 46%),radial-gradient(circle at 90% 92%,rgba(120,200,255,0.12),transparent 46%),radial-gradient(rgba(42,118,201,0.12) 0.7px,transparent 0.7px); background-size:auto,auto,18px 18px; }
+.app-main::after { content:""; position:absolute; top:8px; right:24px; width:180px; height:70px; z-index:0; pointer-events:none; opacity:.5; background:right center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='70' fill='none' stroke='%232A76C9' stroke-opacity='0.5' stroke-width='1.4'%3E%3Cpath d='M60 40 q14 -22 34 -8 q10 -18 30 -6 q22 4 20 20'/%3E%3Cpath d='M96 46 q14 -8 30 -2'/%3E%3Ccircle cx='150' cy='30' r='9' stroke-opacity='0.4'/%3E%3Cpath d='M150 21 a9 9 0 0 1 0 18' stroke='%23D4B86A' stroke-opacity='0.6'/%3E%3C/svg%3E"); }
+.app-main > * { position:relative; z-index:1; }
+.card { background:#FFF; border-radius:12px; box-shadow:0 2px 12px rgba(21,45,70,0.06); border:1px solid rgba(215,226,240,0.7); overflow:hidden; }
+.card-head { padding:16px 20px; border-bottom:1px solid #E8EDF5; display:flex; align-items:center; justify-content:space-between; }
+.card-title { display:flex; align-items:center; gap:10px; font-weight:600; font-size:15px; color:#23344D; }
+.card-title-bar { width:3px; height:18px; border-radius:2px; background:linear-gradient(180deg,#D4B86A 0%,#E8D49E 100%); }
+.tabs-row { display:flex; border-bottom:1px solid #E8EDF5; padding:0 20px; gap:2px; background:#FFF; }
+.tab { padding:14px 18px 12px; font-size:14px; color:#8A99B0; cursor:pointer; position:relative; border-bottom:2px solid transparent; transition:all .2s; text-decoration:none; }
+.tab:hover { color:#23344D; }
+.tab.active { color:#23344D; font-weight:600; border-bottom-color:#2A76C9; }
+.tab.active::before { content:""; position:absolute; top:0; left:0; width:6px; height:6px; background:linear-gradient(135deg,#D4B86A 0%,transparent 60%); border-radius:0 0 6px 0; opacity:0.6; }
+.data-table { width:100%; border-collapse:collapse; }
+.data-table thead { background:linear-gradient(135deg,#0E3A52 0%,#1A4966 100%); border-bottom:2px solid #D4B86A; }
+.data-table thead th { padding:12px 14px; color:#FFF; font-weight:600; font-size:13px; text-align:center; }
+.data-table tbody tr { border-bottom:1px solid #F0F4FA; transition:background .15s; }
+.data-table tbody tr:hover { background:rgba(42,118,201,0.035); }
+.data-table tbody td { padding:11px 14px; font-size:13.5px; color:#23344D; }
+.tag { padding:3px 10px; border-radius:999px; font-size:12px; font-weight:500; display:inline-flex; align-items:center; gap:5px; }
+.tag.success { background:linear-gradient(135deg,rgba(54,179,126,0.15) 0%,rgba(54,179,126,0.08) 100%); color:#249363; border:1px solid rgba(54,179,126,0.25); }
+.tag.warning { background:linear-gradient(135deg,rgba(255,140,56,0.15) 0%,rgba(255,140,56,0.08) 100%); color:#C96100; border:1px solid rgba(255,140,56,0.25); }
+.tag.plain { background:linear-gradient(135deg,rgba(138,153,176,0.1) 0%,rgba(138,153,176,0.05) 100%); color:#6B7A8F; border:1px solid rgba(138,153,176,0.2); }
+.tag.info { background:linear-gradient(135deg,rgba(42,118,201,0.15) 0%,rgba(42,118,201,0.08) 100%); color:#2362B0; border:1px solid rgba(42,118,201,0.25); }
+.tag.danger { background:linear-gradient(135deg,rgba(229,76,76,0.15) 0%,rgba(229,76,76,0.08) 100%); color:#C93030; border:1px solid rgba(229,76,76,0.25); }
+.tag.gold { background:linear-gradient(135deg,rgba(212,184,106,0.2) 0%,rgba(212,184,106,0.1) 100%); color:#A8842F; border:1px solid rgba(212,184,106,0.4); }
+.btn { padding:9px 18px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; border:none; display:inline-flex; align-items:center; gap:6px; transition:all .2s; }
+.btn-primary { background:linear-gradient(135deg,#2A76C9 0%,#3D88E0 100%); color:#FFF; box-shadow:0 3px 10px rgba(42,118,201,0.25); }
+.btn-outline { background:#FFF; border:1px solid #D7E2F0; color:#2A76C9; }
+.search-box { display:flex; align-items:center; gap:8px; padding:8px 14px; border:1px solid #D7E2F0; border-radius:8px; background:#FFF; }
+.search-box input { border:none; outline:none; background:transparent; font-size:14px; color:#23344D; width:170px; }
+.act-link { color:#2A76C9; margin:0 8px; cursor:pointer; text-decoration:none; font-size:14px; }
+.act-link:hover { text-decoration:underline; }
+.act-link.danger { color:#E54C4C; }
+.act-link.gold { color:#A8842F; }
+.code-tag { font-family:'JetBrains Mono','SF Mono',Consolas,monospace; font-size:12px; background:#F0F4FA; color:#2362B0; padding:1px 7px; border-radius:4px; border:1px solid rgba(42,118,201,0.15); }
+/* 统计卡 */
+.stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.stat-card { background:#FFF; border-radius:12px; box-shadow:0 2px 12px rgba(21,45,70,0.06); border:1px solid rgba(215,226,240,0.7); padding:18px 20px; display:flex; align-items:center; gap:14px; }
+.stat-icon { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#FFF; flex-shrink:0; }
+.stat-icon.blue { background:linear-gradient(135deg,#2A76C9,#3D88E0); }
+.stat-icon.green { background:linear-gradient(135deg,#36B37E,#4FC990); }
+.stat-icon.red { background:linear-gradient(135deg,#E54C4C,#F06A6A); }
+.stat-icon.orange { background:linear-gradient(135deg,#FF8C38,#FFA45C); }
+.stat-num { font-size:26px; font-weight:700; color:#23344D; line-height:1.1; }
+.stat-label { font-size:12.5px; color:#8A99B0; margin-top:2px; }
+.stat-delta { font-size:11.5px; margin-top:2px; }
+.stat-delta.up { color:#A8842F; }
+.stat-delta.down { color:#C93030; }
+.progress-mini { height:6px; border-radius:3px; background:#E8EDF5; overflow:hidden; width:120px; margin-top:6px; }
+.progress-mini .fill { height:100%; background:linear-gradient(90deg,#36B37E,#4FC990); }
+/* 图表 */
+.chart-grid { display:grid; grid-template-columns:40% 60%; gap:16px; }
+.donut-wrap { display:flex; flex-direction:column; align-items:center; padding:10px 0; }
+.donut { width:180px; height:180px; border-radius:50%; background:conic-gradient(#36B37E 0 87.4%, #E54C4C 87.4% 96.1%, #FF8C38 96.1% 99.1%, #C5CFDD 99.1% 100%); display:flex; align-items:center; justify-content:center; position:relative; }
+.donut::after { content:""; position:absolute; width:120px; height:120px; border-radius:50%; background:#FFF; }
+.donut-center { position:relative; z-index:1; text-align:center; }
+.donut-num { font-size:30px; font-weight:700; color:#23344D; line-height:1; }
+.donut-label { font-size:12px; color:#8A99B0; margin-top:4px; }
+.donut-delta { font-size:11.5px; color:#A8842F; margin-top:6px; }
+.legend { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:14px; }
+.legend-item { display:flex; align-items:center; gap:5px; font-size:12px; color:#566680; }
+.legend-dot { width:9px; height:9px; border-radius:2px; }
+/* 柱状图 */
+.bar-chart { display:flex; align-items:flex-end; gap:14px; height:200px; padding:0 8px 26px; position:relative; border-bottom:1px solid #E8EDF5; }
+.bar-group { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
+.bar-pair { display:flex; align-items:flex-end; gap:4px; height:100%; }
+.bar { width:14px; border-radius:3px 3px 0 0; transition:all .2s; }
+.bar.pass { background:linear-gradient(180deg,#3D88E0,#2A76C9); }
+.bar.fail { background:linear-gradient(180deg,#F06A6A,#E54C4C); }
+.bar.pass.gold { background:linear-gradient(180deg,#E8D49E,#D4B86A); }
+.bar-x { font-size:11px; color:#8A99B0; position:absolute; bottom:4px; }
+.bar-y-axis { position:absolute; left:-2px; top:0; bottom:26px; width:1px; background:#E8EDF5; }
+.grid-line { position:absolute; left:0; right:0; border-top:1px dashed #E8EDF5; }
+.chart-legend { display:flex; gap:16px; justify-content:center; margin-top:10px; }
+</style>
+</head><body><header class="app-header">
+<div class="flex items-center gap-4">
+<div class="header-brand flex items-center gap-3 cursor-pointer" onclick="window.location.href='home.html'" style="cursor:pointer">
+<div class="brand-logo"><img src="../../logo.png" alt="河图智弈"></div>
+<span style="font-family:'Noto Serif SC',serif; font-weight:700; font-size:18px; color:#FFF; letter-spacing:0.5px;">河图智弈</span>
+</div>
+<button onclick="toggleSidebar()" class="header-btn" title="展开/收起菜单"><span class="material-symbols-outlined">menu</span></button>
+<div class="crumb-sep"></div>
+<div class="crumb-item"><span class="material-symbols-outlined" style="font-size:18px;opacity:.75">fact_check</span><span>用例管理</span></div><div class="crumb-item active"><span class="material-symbols-outlined" style="font-size:18px;opacity:.75">chevron_right</span><span>执行记录</span></div>
+</div>
+<div class="flex items-center gap-4">
+<button class="header-btn"><span class="material-symbols-outlined">notifications</span></button>
+<button class="header-btn"><span class="material-symbols-outlined">settings</span></button>
+<a href="login.html" class="header-btn" title="退出登录"><span class="material-symbols-outlined">logout</span></a>
+<div class="header-divider"></div>
+<div class="flex items-center gap-3">
+<div class="text-right leading-tight"><div class="user-name">管理员</div><div class="user-role">系统总调度</div></div>
+<div class="user-avatar"><span class="material-symbols-outlined">person</span></div>
+</div>
+</div>
+</header>
+<div class="app-body">
+<aside id="appSidebar" class="app-sidebar">
+<nav>
+<a class="nav-item" href="home.html"><span class="material-symbols-outlined">home</span><span>首页</span></a>
+<a class="nav-item" href="projects.html"><span class="material-symbols-outlined">account_tree</span><span>项目管理</span></a>
+<a class="nav-item active" href="testcases.html"><span class="material-symbols-outlined">fact_check</span><span>用例管理</span></a>
+<a class="nav-item" href="ai-chat.html"><span class="material-symbols-outlined">psychology</span><span>AI对话分析</span></a>
+<div class="nav-item" style="justify-content:space-between; padding-right:10px; opacity:.85; font-weight:600; color:rgba(255,255,255,0.8);">
+<div class="flex items-center gap-3"><span class="material-symbols-outlined" style="font-size:20px">admin_panel_settings</span><span>系统管理</span></div>
+<span class="material-symbols-outlined" style="font-size:16px">expand_more</span>
+</div>
+<div class="nav-sub">
+<a class="nav-item" href="dashboard-users.html"><span class="material-symbols-outlined">person</span><span>用户管理</span></a>
+<a class="nav-item" href="roles.html"><span class="material-symbols-outlined">shield_person</span><span>角色管理</span></a>
+<a class="nav-item" href="permissions.html"><span class="material-symbols-outlined">verified_user</span><span>权限管理</span></a>
+</div>
+</nav>
+</aside>
+<main class="app-main">
+<div class="tabs-row">
+<a class="tab" href="testcases.html"><span>用例列表</span></a>
+<a class="tab" href="test-suites.html"><span>测试套件</span></a>
+<a class="tab" href="requirements.html"><span>需求文档</span></a>
+<a class="tab active" href="execution-records.html"><span>执行记录</span></a>
+</div>
+<div style="padding:20px; display:flex; flex-direction:column; gap:16px; flex:1; overflow:auto;">
+<div class="stat-grid">
+<div class="stat-card"><div class="stat-icon blue"><span class="material-symbols-outlined">play_circle</span></div><div><div class="stat-num">1,286</div><div class="stat-label">总执行次数</div><div class="stat-delta up">▲ 较上周 +86</div></div></div>
+<div class="stat-card"><div class="stat-icon green"><span class="material-symbols-outlined">check_circle</span></div><div><div class="stat-num" style="color:#A8842F">87.4%</div><div class="stat-label">通过率</div><div class="stat-delta up">▲ 较上周 +2.1%</div></div></div>
+<div class="stat-card"><div class="stat-icon red"><span class="material-symbols-outlined">cancel</span></div><div><div class="stat-num">112</div><div class="stat-label">失败</div><div class="stat-delta down">▼ 较上周 -8</div></div></div>
+<div class="stat-card"><div class="stat-icon orange"><span class="material-symbols-outlined">block</span></div><div><div class="stat-num">49</div><div class="stat-label">阻塞/跳过</div><div class="stat-delta up">▲ +3</div></div></div>
+</div>
+<div class="card" style="display:flex; flex-direction:column;">
+<div class="card-head">
+<div class="card-title"><div class="card-title-bar"></div><span>执行记录列表</span></div>
+<div class="flex items-center gap-3">
+<div class="search-box"><span class="material-symbols-outlined" style="color:#8A99B0">search</span><input placeholder="搜索用例编号/标题"></div>
+<select class="btn btn-outline" style="padding:8px 12px;"><option>全部结果</option><option>通过</option><option>失败</option><option>阻塞</option><option>跳过</option></select>
+<select class="btn btn-outline" style="padding:8px 12px;"><option>全部项目</option><option>ht-ai-test</option><option>mall</option></select>
+<button class="btn btn-outline"><span class="material-symbols-outlined" style="font-size:18px">download</span><span>导出记录</span></button>
+</div>
+</div>
+<div style="overflow:auto;">
+<table class="data-table">
+<thead><tr><th>用例编号</th><th>用例标题</th><th>所属项目</th><th>执行结果</th><th>执行人</th><th>执行时间</th><th>备注</th><th>缺陷关联</th><th>操作</th></tr></thead>
+<tbody>
+<tr><td><span class="code-tag">TC-HTAI-001</span></td><td>正确账号密码登录</td><td>ht-ai-test</td><td><span class="tag success">通过</span></td><td>张明</td><td>2026-07-05 14:32</td><td style="color:#8A99B0">—</td><td style="color:#8A99B0">—</td><td style="text-align:center"><a class="act-link">查看详情</a></td></tr>
+<tr><td><span class="code-tag">TC-HTAI-005</span></td><td>密码错误次数锁定</td><td>ht-ai-test</td><td><span class="tag danger">失败</span></td><td>李华</td><td>2026-07-05 11:08</td><td style="color:#566680">锁定逻辑未触发</td><td><a class="act-link gold">BUG-2026-0071</a></td><td style="text-align:center"><a class="act-link">查看详情</a><a class="act-link gold">重新执行</a></td></tr>
+<tr><td><span class="code-tag">TC-MALL-012</span></td><td>下单流程校验</td><td>mall</td><td><span class="tag warning">阻塞</span></td><td>王芳</td><td>2026-07-04 16:20</td><td style="color:#566680">依赖接口未就绪</td><td style="color:#8A99B0">—</td><td style="text-align:center"><a class="act-link">查看详情</a><a class="act-link gold">重新执行</a></td></tr>
+<tr><td><span class="code-tag">TC-HTAI-003</span></td><td>验证码校验</td><td>ht-ai-test</td><td><span class="tag success">通过</span></td><td>张明</td><td>2026-07-04 10:15</td><td style="color:#8A99B0">—</td><td style="color:#8A99B0">—</td><td style="text-align:center"><a class="act-link">查看详情</a></td></tr>
+<tr><td><span class="code-tag">TC-MALL-008</span></td><td>注册邮箱校验</td><td>mall</td><td><span class="tag plain">跳过</span></td><td>王芳</td><td>2026-07-03 09:40</td><td style="color:#566680">本次未覆盖</td><td style="color:#8A99B0">—</td><td style="text-align:center"><a class="act-link">查看详情</a></td></tr>
+<tr><td><span class="code-tag">TC-HTAI-006</span></td><td>登录后跳转首页</td><td>ht-ai-test</td><td><span class="tag success">通过</span></td><td>李华</td><td>2026-07-03 17:55</td><td style="color:#8A99B0">—</td><td style="color:#8A99B0">—</td><td style="text-align:center"><a class="act-link">查看详情</a></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="card">
+<div class="card-head">
+<div class="card-title"><div class="card-title-bar"></div><span>执行结果分布</span></div>
+</div>
+<div style="padding:20px;" class="chart-grid">
+<div class="donut-wrap">
+<div class="donut">
+<div class="donut-center">
+<div class="donut-num">87.4%</div>
+<div class="donut-label">通过率</div>
+<div class="donut-delta">较上周 +2.1%</div>
+</div>
+</div>
+<div class="legend">
+<div class="legend-item"><span class="legend-dot" style="background:#36B37E"></span>通过 87.4%</div>
+<div class="legend-item"><span class="legend-dot" style="background:#E54C4C"></span>失败 8.7%</div>
+<div class="legend-item"><span class="legend-dot" style="background:#FF8C38"></span>阻塞 3.0%</div>
+<div class="legend-item"><span class="legend-dot" style="background:#C5CFDD"></span>跳过 0.9%</div>
+</div>
+</div>
+<div>
+<div style="font-size:13px;color:#8A99B0;margin-bottom:12px">近 5 日执行趋势</div>
+<div class="bar-chart">
+<div class="bar-y-axis"></div>
+<div class="grid-line" style="bottom:25%"></div>
+<div class="grid-line" style="bottom:50%"></div>
+<div class="grid-line" style="bottom:75%"></div>
+<div class="bar-group"><div class="bar-pair"><div class="bar pass" style="height:55%"></div><div class="bar fail" style="height:12%"></div></div><div class="bar-x" style="position:relative">07-01</div></div>
+<div class="bar-group"><div class="bar-pair"><div class="bar pass" style="height:62%"></div><div class="bar fail" style="height:9%"></div></div><div class="bar-x" style="position:relative">07-02</div></div>
+<div class="bar-group"><div class="bar-pair"><div class="bar pass gold" style="height:88%"></div><div class="bar fail" style="height:6%"></div></div><div class="bar-x" style="position:relative">07-03</div></div>
+<div class="bar-group"><div class="bar-pair"><div class="bar pass" style="height:70%"></div><div class="bar fail" style="height:14%"></div></div><div class="bar-x" style="position:relative">07-04</div></div>
+<div class="bar-group"><div class="bar-pair"><div class="bar pass" style="height:78%"></div><div class="bar fail" style="height:8%"></div></div><div class="bar-x" style="position:relative">07-05</div></div>
+</div>
+<div class="chart-legend">
+<div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#2A76C9,#3D88E0)"></span>通过</div>
+<div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#E54C4C,#F06A6A)"></span>失败</div>
+<div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#D4B86A,#E8D49E)"></span>峰值日（鎏金高亮）</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+function toggleSidebar(){var s=document.getElementById('appSidebar');s&&s.classList.toggle('is-collapsed');}
+</script>
+</body></html>

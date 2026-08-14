@@ -1,0 +1,21 @@
+[project]
+name = "backend"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    # web服务相关
+    "fastapi>=0.140.0",
+    "pydantic-settings>=2.14.2",
+    "uvicorn[standard]>=0.51.0",
+    # 数据库
+    "tortoise-orm[asyncpg]>=1.1.7",
+    "psycopg-binary>=3.3.4",
+    # 日志
+    "loguru>=0.7.3",
+    # langchain
+    "deepagents>=0.6.12",
+    "langchain-openai>=1.4.1",
+]
+
+[tool.tortoise]
+tortoise_orm = "src.hetu.config.TORTOISE_ORM"

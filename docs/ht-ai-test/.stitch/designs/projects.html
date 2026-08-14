@@ -1,0 +1,360 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目管理 - 河图智弈</title>
+<!-- 字体：思源宋体 + Inter -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- 图标库：Material Symbols（正确的字体加载方式，通过 CSS 而非 JS） -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0&display=swap" rel="stylesheet">
+<style>
+/* ===================== 品牌色彩变量（强制复用） ===================== */
+:root{
+  --primary-blue:#2A76C9;
+  --bg-main:#F8FAFD;
+  --dark-qing:#23344D;
+  --jin:#D4B86A;
+  --light-qing:#D7E2F0;
+  --text-gray:#8A99B0;
+  --success:#36B37E;
+  --warning:#FF8C38;
+  --danger:#E54C4C;
+  --radius-base:8px;
+  --radius-card:12px;
+  --trans:.2s ease;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  font-family:Inter,"Noto Serif SC","Microsoft Yahei",sans-serif;
+  background:var(--bg-main);
+  color:var(--dark-qing);
+  display:flex;flex-direction:column;font-size:14px;
+}
+a{text-decoration:none;color:inherit;}
+button,input,select{font-family:inherit;font-size:inherit;outline:none;border:none;}
+
+/* Material Symbols 图标基类 */
+.material-symbols-outlined{
+  font-family:'Material Symbols Outlined';font-weight:normal;font-style:normal;
+  font-size:20px;display:inline-block;line-height:1;text-transform:none;
+  letter-spacing:normal;word-wrap:normal;white-space:nowrap;direction:ltr;
+  -webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased;
+}
+
+/* ===================== 极简工具类（替代未加载的 Tailwind，保证自包含） ===================== */
+.flex{display:flex;}
+.items-center{align-items:center;}
+.justify-center{justify-content:center;}
+.gap-1{gap:4px;} .gap-2{gap:8px;} .gap-3{gap:12px;} .gap-4{gap:16px;}
+.cursor-pointer{cursor:pointer;}
+.w-8{width:32px;} .h-8{height:32px;} .w-px{width:1px;} .h-8w{height:32px;}
+.rounded-full{border-radius:9999px;}
+.border{border:1px solid;}
+.mx-1{margin:0 4px;}
+.text-right{text-align:right;}
+.leading-tight{line-height:1.25;}
+
+/* ===================== 顶栏：品牌渐变 + 鎏金装饰线 ===================== */
+.app-header{
+  height:60px;
+  background:linear-gradient(135deg,#0E2A3E 0%,#1A4966 50%,#235A7D 100%);
+  border-bottom:2px solid var(--jin);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 12px rgba(0,30,60,0.15);
+}
+.app-header::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,rgba(90,180,255,0.5) 30%,rgba(212,184,106,0.7) 60%,rgba(90,180,255,0.5) 70%,transparent);
+}
+/* 圆形品牌 LOGO（内联 SVG 节点网络，替代此前加载失败的外链大图） */
+.brand-logo{
+  width:36px;height:36px;border-radius:50%;
+  background:#fff;border:2px solid var(--jin);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;
+  box-shadow:0 0 0 3px rgba(212,184,106,0.15);
+}
+.brand-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.brand-name{font-family:'Noto Serif SC',serif;font-weight:700;font-size:18px;color:#fff;letter-spacing:.5px;}
+/* 品牌区占据侧栏宽度列，使折叠按钮对齐内容区左边缘 */
+.header-brand{width:184px;flex-shrink:0;}
+.crumb-sep{width:1px;height:16px;background:linear-gradient(180deg,var(--jin),rgba(212,184,106,0.3));margin:0 8px;}
+.crumb-item{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,0.7);font-size:14px;}
+.crumb-item.active{color:#fff;font-weight:600;}
+.header-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#C8D6E5;cursor:pointer;border-radius:8px;transition:all var(--trans);background:transparent;}
+.header-btn:hover{background:rgba(255,255,255,0.12);color:#fff;}
+.header-divider{height:32px;width:1px;background:rgba(255,255,255,0.2);margin:0 4px;}
+.user-name{color:#fff;font-size:14px;font-weight:500;}
+.user-role{color:rgba(255,255,255,0.6);font-size:11px;}
+.user-avatar{width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.85);}
+
+/* ===================== 侧边栏：科技流线底纹 + 鎏金选中标识 ===================== */
+.app-body{display:flex;flex:1;min-height:0;}
+.app-sidebar{
+  width:220px;background:linear-gradient(180deg,#1A4966 0%,#0E3A5A 40%,#0A2D45 100%);
+  border-right:1px solid rgba(212,184,106,0.25);position:relative;overflow:hidden;transition:width .22s ease;
+}
+.app-sidebar.is-collapsed{width:64px;}
+.app-sidebar::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.08;
+  background-image:radial-gradient(ellipse 80% 40% at 0% 20%,rgba(80,160,240,0.6) 0%,transparent 70%),radial-gradient(ellipse 60% 30% at 100% 70%,rgba(160,120,255,0.5) 0%,transparent 70%);
+}
+.app-sidebar nav{position:relative;z-index:1;padding:16px 8px;}
+.nav-group{display:flex;align-items:center;justify-content:space-between;padding:12px 12px 12px 14px;color:rgba(255,255,255,0.8);font-size:14px;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 14px;color:rgba(255,255,255,0.7);font-size:14px;border-radius:8px;cursor:pointer;margin-bottom:2px;transition:all .18s ease;}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,0.08);}
+.nav-item.active{background:linear-gradient(90deg,rgba(42,118,201,0.25) 0%,rgba(42,118,201,0.08) 100%);color:#fff;font-weight:600;border-left:3px solid var(--jin);}
+.nav-sub{padding-left:26px;}
+.nav-sub .nav-item{padding:9px 10px;font-size:13.5px;}
+.app-sidebar.is-collapsed .nav-item,.app-sidebar.is-collapsed .nav-group{justify-content:center;padding-left:0;padding-right:0;}
+.app-sidebar.is-collapsed .nav-item .label,.app-sidebar.is-collapsed .nav-group .label,.app-sidebar.is-collapsed .nav-group .material-symbols-outlined:last-child{display:none;}
+.app-sidebar.is-collapsed .nav-sub{display:none;}
+/* 侧栏底部山水流线装饰（仅氛围层，位于菜单之下，不影响布局） */
+.app-sidebar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:210px;z-index:0;pointer-events:none;opacity:.55;background:bottom center/100% auto no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='210' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='rgba(120,200,255,0.35)' stroke-width='1.2'%3E%3Cpath d='M-20 150 Q40 118 100 150 T240 150 T380 150'/%3E%3Cpath d='M-20 172 Q40 140 100 172 T240 172 T380 172'/%3E%3Cpath d='M-20 194 Q40 162 100 194 T240 194 T380 194'/%3E%3C/g%3E%3C/svg%3E");}
+
+/* ===================== 主体 ===================== */
+.app-main{flex:1;display:flex;flex-direction:column;overflow:auto;position:relative;background:linear-gradient(135deg,#E7EFF8 0%,#F1F6FC 45%,#E4EDF6 100%);}
+.app-main::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 16% 10%,rgba(42,118,201,0.10),transparent 46%),radial-gradient(circle at 90% 92%,rgba(120,200,255,0.12),transparent 46%),radial-gradient(rgba(42,118,201,0.12) 0.7px,transparent 0.7px);background-size:auto,auto,18px 18px;}
+/* 右上角云纹装饰（氛围层，不影响布局） */
+.app-main::after{content:"";position:absolute;top:8px;right:24px;width:180px;height:70px;z-index:0;pointer-events:none;opacity:.5;background:right center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='70' fill='none' stroke='%232A76C9' stroke-opacity='0.5' stroke-width='1.4'%3E%3Cpath d='M60 40 q14 -22 34 -8 q10 -18 30 -6 q22 4 20 20'/%3E%3Cpath d='M96 46 q14 -8 30 -2'/%3E%3Ccircle cx='150' cy='30' r='9' stroke-opacity='0.4'/%3E%3Cpath d='M150 21 a9 9 0 0 1 0 18' stroke='%23D4B86A' stroke-opacity='0.6'/%3E%3C/svg%3E");}
+.app-main>*{position:relative;z-index:1;}
+
+/* Tab 栏：鎏金激活角标 */
+.tabs-row{display:flex;border-bottom:1px solid #E8EDF5;padding:0 20px;gap:2px;background:#fff;}
+.tab{padding:14px 18px 12px;font-size:14px;color:var(--text-gray);cursor:pointer;position:relative;border-bottom:2px solid transparent;transition:all var(--trans);}
+.tab.active{color:var(--dark-qing);font-weight:600;border-bottom-color:var(--primary-blue);}
+.tab.active::before{content:"";position:absolute;top:0;left:0;width:6px;height:6px;background:linear-gradient(135deg,var(--jin) 0%,transparent 60%);border-radius:0 0 6px 0;opacity:.6;}
+
+/* 卡片 + 鎏金标题竖条 */
+.card{background:#fff;border-radius:var(--radius-card);box-shadow:0 2px 12px rgba(21,45,70,0.06);border:1px solid rgba(215,226,240,0.7);overflow:hidden;}
+.card-head{padding:16px 20px;border-bottom:1px solid #E8EDF5;display:flex;align-items:center;justify-content:space-between;}
+.card-title{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;color:var(--dark-qing);}
+.card-title-bar{width:3px;height:18px;border-radius:2px;background:linear-gradient(180deg,var(--jin) 0%,#E8D49E 100%);}
+
+/* 模块树 */
+.tree-card{width:240px;flex-shrink:0;background:#fff;border-radius:var(--radius-card);box-shadow:0 2px 12px rgba(21,45,70,0.06);border:1px solid rgba(215,226,240,0.7);overflow:hidden;}
+.tree-node{padding:10px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--dark-qing);font-size:14px;border-radius:6px;margin:2px 4px;transition:all var(--trans);}
+.tree-node:hover{background:rgba(42,118,201,0.06);}
+.tree-node.active{background:rgba(42,118,201,0.1);color:var(--primary-blue);font-weight:500;}
+.tree-children{padding-left:26px;}
+
+/* 表格：黛青表头 + 鎏金下沿 */
+.data-table{width:100%;border-collapse:collapse;}
+.data-table thead{background:linear-gradient(135deg,#0E3A52 0%,#1A4966 100%);border-bottom:2px solid var(--jin);}
+.data-table thead th{padding:14px 16px;color:#fff;font-weight:600;font-size:13px;text-align:center;letter-spacing:.2px;}
+.data-table tbody tr{border-bottom:1px solid #F0F4FA;transition:background .15s;}
+.data-table tbody tr:hover{background:rgba(42,118,201,0.035);}
+.data-table tbody td{padding:13px 16px;font-size:14px;color:var(--dark-qing);}
+.owner-cell{display:flex;align-items:center;gap:8px;}
+.date-cell{font-size:12.5px;color:#6B7A8F;}
+
+/* 进度条（按通过率区间自动上色，末端鎏金圆点） */
+.progress-bar{height:6px;border-radius:3px;background:#E8EDF5;overflow:hidden;position:relative;}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--primary-blue) 0%,#5A96E5 100%);}
+.progress-fill.high{background:linear-gradient(90deg,var(--success) 0%,#5FD3A3 100%);}
+.progress-fill.low{background:linear-gradient(90deg,var(--warning) 0%,#FFB37A 100%);}
+.progress-pct{text-align:right;font-size:12px;font-weight:500;margin-top:3px;}
+
+/* 状态标签 */
+.tag{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px;}
+.tag.running{background:linear-gradient(135deg,rgba(42,118,201,0.15) 0%,rgba(42,118,201,0.08) 100%);color:#1D5DA8;border:1px solid rgba(42,118,201,0.25);}
+.tag.success{background:linear-gradient(135deg,rgba(54,179,126,0.15) 0%,rgba(54,179,126,0.08) 100%);color:#249363;border:1px solid rgba(54,179,126,0.25);}
+.tag.warning{background:linear-gradient(135deg,rgba(255,140,56,0.15) 0%,rgba(255,140,56,0.08) 100%);color:#C96100;border:1px solid rgba(255,140,56,0.25);}
+.tag.plain{background:linear-gradient(135deg,rgba(138,153,176,0.1) 0%,rgba(138,153,176,0.05) 100%);color:#6B7A8F;border:1px solid rgba(138,153,176,0.2);}
+
+/* 按钮 */
+.btn{padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all var(--trans);}
+.btn-primary{background:linear-gradient(135deg,var(--primary-blue) 0%,#3D88E0 100%);color:#fff;box-shadow:0 3px 10px rgba(42,118,201,0.25);}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(42,118,201,0.35);}
+.btn-primary .material-symbols-outlined{color:var(--jin);font-size:18px;}
+.btn-outline{background:#fff;border:1px solid var(--light-qing);color:var(--primary-blue);}
+
+/* 搜索框 */
+.search-box{display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--light-qing);border-radius:8px;background:#fff;transition:border-color var(--trans);}
+.search-box:focus-within{border-color:var(--primary-blue);}
+.search-box input{border:none;outline:none;background:transparent;font-size:14px;color:var(--dark-qing);width:180px;}
+
+/* 操作文字按钮 */
+.op-link{color:var(--primary-blue);margin:0 6px;transition:color var(--trans);}
+.op-link:hover{color:var(--jin);text-decoration:underline;}
+.op-link.muted{color:var(--text-gray);}
+.op-link.muted:hover{color:var(--jin);}
+
+/* 头像组 */
+.avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--primary-blue),#5A96E5);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;}
+.avatar-group{display:flex;}
+.avatar-group .avatar{margin-left:-6px;}
+.avatar-group .avatar:first-child{margin-left:0;}
+
+/* 分页 */
+.pagination-wrapper{position:sticky;bottom:0;left:0;right:0;z-index:20;background:#fff;border-top:1px solid #E8EDF5;padding:12px 24px;box-shadow:0 -3px 12px rgba(21,45,70,0.05);display:flex;align-items:center;justify-content:space-between;}
+.pagination{display:flex;align-items:center;gap:4px;}
+.page-btn{min-width:34px;height:34px;padding:0 6px;border-radius:6px;border:1px solid var(--light-qing);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#6B7A8F;transition:all .15s;background:#fff;}
+.page-btn:hover{border-color:var(--primary-blue);color:var(--primary-blue);}
+.page-btn.active{background:var(--primary-blue);border-color:var(--primary-blue);color:#fff;}
+.page-info{font-size:13px;color:var(--text-gray);}
+</style>
+</head>
+<body>
+<!-- ===================== 顶栏 ===================== -->
+<header class="app-header">
+  <div class="flex items-center gap-4">
+    <div class="header-brand flex items-center gap-3 cursor-pointer" onclick="window.location.href='home.html'">
+      <div class="brand-logo">
+        <img src="../../logo.png" alt="河图智弈">
+      </div>
+      <span class="brand-name">河图智弈</span>
+    </div>
+    <button onclick="toggleSidebar()" class="header-btn" title="展开/收起菜单"><span class="material-symbols-outlined">menu</span></button>
+    <div class="crumb-sep"></div>
+    <div class="crumb-item active"><span class="material-symbols-outlined" style="font-size:18px;opacity:.8">account_tree</span><span>项目管理</span></div>
+  </div>
+  <div class="flex items-center gap-2">
+    <button class="header-btn" title="通知"><span class="material-symbols-outlined">notifications</span></button>
+    <button class="header-btn" title="设置"><span class="material-symbols-outlined">settings</span></button>
+    <a href="login.html" class="header-btn" title="退出登录"><span class="material-symbols-outlined">logout</span></a>
+    <div class="header-divider"></div>
+    <div class="flex items-center gap-3">
+      <div class="text-right leading-tight">
+        <div class="user-name">管理员</div>
+        <div class="user-role">系统总调度</div>
+      </div>
+      <div class="user-avatar"><span class="material-symbols-outlined">person</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="app-body">
+  <!-- ===================== 侧边栏 ===================== -->
+  <aside id="appSidebar" class="app-sidebar">
+    <nav>
+      <a class="nav-item" href="home.html"><span class="material-symbols-outlined">home</span><span class="label">首页</span></a>
+      <a class="nav-item active" href="projects.html"><span class="material-symbols-outlined">account_tree</span><span class="label">项目管理</span></a>
+      <a class="nav-item" href="testcases.html"><span class="material-symbols-outlined">fact_check</span><span class="label">用例管理</span></a>
+      <a class="nav-item" href="ai-chat.html"><span class="material-symbols-outlined">psychology</span><span class="label">AI对话分析</span></a>
+      <div class="nav-group">
+        <div class="flex items-center gap-3"><span class="material-symbols-outlined" style="font-size:20px">admin_panel_settings</span><span class="label">系统管理</span></div>
+        <span class="material-symbols-outlined" style="font-size:16px">expand_more</span>
+      </div>
+      <div class="nav-sub">
+        <a class="nav-item" href="dashboard-users.html"><span class="material-symbols-outlined">person</span><span class="label">用户管理</span></a>
+        <a class="nav-item" href="roles.html"><span class="material-symbols-outlined">shield_person</span><span class="label">角色管理</span></a>
+        <a class="nav-item" href="permissions.html"><span class="material-symbols-outlined">verified_user</span><span class="label">权限管理</span></a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ===================== 内容区 ===================== -->
+  <main class="app-main">
+    <div class="tabs-row">
+      <a class="tab active"><span>项目列表</span></a>
+      <a class="tab"><span>模块管理</span></a>
+      <a class="tab"><span>成员管理</span></a>
+    </div>
+
+    <div style="padding:20px;display:flex;gap:16px;flex:1;">
+      <!-- 测试项目表格 -->
+      <div class="card" style="flex:1;display:flex;flex-direction:column;">
+        <div class="card-head">
+          <div class="card-title"><div class="card-title-bar"></div><span>测试项目</span></div>
+          <div class="flex items-center gap-3">
+            <div class="search-box"><span class="material-symbols-outlined" style="color:#8A99B0">search</span><input placeholder="搜索项目名称/编号"></div>
+            <select class="btn btn-outline" style="padding:8px 12px;"><option>所有状态</option><option>规划中</option><option>进行中</option><option>已完成</option><option>已归档</option></select>
+            <button class="btn btn-primary"><span class="material-symbols-outlined">add</span><span>新建项目</span></button>
+          </div>
+        </div>
+        <div style="overflow:auto;flex:1;">
+          <table class="data-table">
+            <thead><tr><th>项目名称</th><th>项目编号</th><th>负责人</th><th>状态</th><th>起止时间</th><th>成员</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b style="font-weight:500">AI智能体核心算法测试</b></td><td>PRJ-2026-001</td>
+                <td><div class="owner-cell"><div class="avatar">张</div>张伟</div></td>
+                <td><span class="tag running">进行中</span></td><td class="date-cell">2026-01-05 ~ 2026-08-30</td>
+                <td><div class="avatar-group"><div class="avatar">张</div><div class="avatar">李</div><div class="avatar">王</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+              <tr>
+                <td><b style="font-weight:500">订单支付回归测试</b></td><td>PRJ-2026-002</td>
+                <td><div class="owner-cell"><div class="avatar">李</div>李娜</div></td>
+                <td><span class="tag running">进行中</span></td><td class="date-cell">2026-02-10 ~ 2026-07-15</td>
+                <td><div class="avatar-group"><div class="avatar">赵</div><div class="avatar">钱</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+              <tr>
+                <td><b style="font-weight:500">用户中心 UI自动化</b></td><td>PRJ-2026-003</td>
+                <td><div class="owner-cell"><div class="avatar">王</div>王芳</div></td>
+                <td><span class="tag success">已完成</span></td><td class="date-cell">2025-11-01 ~ 2026-03-20</td>
+                <td><div class="avatar-group"><div class="avatar">张</div><div class="avatar">陈</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+              <tr>
+                <td><b style="font-weight:500">智能推荐引擎压测</b></td><td>PRJ-2026-004</td>
+                <td><div class="owner-cell"><div class="avatar">刘</div>刘洋</div></td>
+                <td><span class="tag warning">规划中</span></td><td class="date-cell">2026-07-01 ~ 2026-12-31</td>
+                <td><div class="avatar-group"><div class="avatar">班</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+              <tr>
+                <td><b style="font-weight:500">旧版报表模块测试</b></td><td>PRJ-2025-018</td>
+                <td><div class="owner-cell"><div class="avatar">陈</div>陈静</div></td>
+                <td><span class="tag plain">已归档</span></td><td class="date-cell">2025-05-01 ~ 2025-09-30</td>
+                <td><div class="avatar-group"><div class="avatar">陈</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+              <tr>
+                <td><b style="font-weight:500">登录安全专项测试</b></td><td>PRJ-2026-005</td>
+                <td><div class="owner-cell"><div class="avatar">张</div>张伟</div></td>
+                <td><span class="tag running">进行中</span></td><td class="date-cell">2026-03-01 ~ 2026-06-30</td>
+                <td><div class="avatar-group"><div class="avatar">张</div><div class="avatar">李</div><div class="avatar">王</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+              <tr>
+                <td><b style="font-weight:500">API性能基准测试</b></td><td>PRJ-2026-006</td>
+                <td><div class="owner-cell"><div class="avatar">赵</div>赵强</div></td>
+                <td><span class="tag running">进行中</span></td><td class="date-cell">2026-02-20 ~ 2026-05-30</td>
+                <td><div class="avatar-group"><div class="avatar">赵</div><div class="avatar">钱</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+              <tr>
+                <td><b style="font-weight:500">移动端兼容性测试</b></td><td>PRJ-2026-007</td>
+                <td><div class="owner-cell"><div class="avatar">孙</div>孙丽</div></td>
+                <td><span class="tag warning">规划中</span></td><td class="date-cell">2026-04-01 ~ 2026-09-30</td>
+                <td><div class="avatar-group"><div class="avatar">孙</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+              <tr>
+                <td><b style="font-weight:500">数据库迁移验证</b></td><td>PRJ-2025-020</td>
+                <td><div class="owner-cell"><div class="avatar">周</div>周明</div></td>
+                <td><span class="tag success">已完成</span></td><td class="date-cell">2025-08-01 ~ 2025-11-30</td>
+                <td><div class="avatar-group"><div class="avatar">周</div><div class="avatar">吴</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+              <tr>
+                <td><b style="font-weight:500">消息队列稳定性测试</b></td><td>PRJ-2026-008</td>
+                <td><div class="owner-cell"><div class="avatar">吴</div>吴涛</div></td>
+                <td><span class="tag warning">规划中</span></td><td class="date-cell">2026-05-01 ~ 2026-10-31</td>
+                <td><div class="avatar-group"><div class="avatar">吴</div></div></td>
+                <td style="text-align:center"><a href="#" class="op-link">编辑</a><a href="#" class="op-link">成员</a><a href="#" class="op-link">详情</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-wrapper">
+          <div class="page-info">共 18 条记录，当前显示第 1 – 10 条</div>
+          <div class="pagination">
+            <button class="page-btn"><span class="material-symbols-outlined" style="font-size:18px">chevron_left</span></button>
+            <button class="page-btn active">1</button><button class="page-btn">2</button>
+            <button class="page-btn"><span class="material-symbols-outlined" style="font-size:18px">chevron_right</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+function toggleSidebar(){var s=document.getElementById('appSidebar');s&&s.classList.toggle('is-collapsed');}
+</script>
+</body></html>

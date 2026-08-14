@@ -1,0 +1,100 @@
+{
+  "name": "projects/15844466494168311713",
+  "projectId": "15844466494168311713",
+  "title": "河图智弈 · 企业级 AI 智能体测试平台",
+  "visibility": "PRIVATE",
+  "projectType": "PROJECT_DESIGN",
+  "origin": "STITCH",
+  "deviceType": "DESKTOP",
+  "designSystemAsset": "assets/5712420502560617273",
+  "designTheme": {
+    "colorMode": "LIGHT",
+    "colorVariant": "TONAL_SPOT",
+    "headlineFont": "NOTO_SERIF",
+    "bodyFont": "NOTO_SANS",
+    "roundness": "ROUND_EIGHT",
+    "customColor": "#2A76C9",
+    "overridePrimaryColor": "#2A76C9",
+    "overrideSecondaryColor": "#23344D",
+    "overrideTertiaryColor": "#D4B86A",
+    "overrideNeutralColor": "#F8FAFD"
+  },
+  "screens": {
+    "logo": {
+      "id": "69912dd3005f4d26acc17701959490fb",
+      "sourceScreen": "projects/15844466494168311713/screens/69912dd3005f4d26acc17701959490fb",
+      "screenType": "IMAGE",
+      "width": 160,
+      "height": 160
+    },
+    "login": {
+      "id": "a1bbcfd7d8004e8a9010597eb8a16c95",
+      "sourceScreen": "projects/15844466494168311713/screens/a1bbcfd7d8004e8a9010597eb8a16c95",
+      "width": 2560,
+      "height": 2048
+    },
+    "dashboard-users": {
+      "id": "aac4f8a2b5b842f1b94e052eb14c28f0",
+      "sourceScreen": "projects/15844466494168311713/screens/aac4f8a2b5b842f1b94e052eb14c28f0",
+      "width": 2560,
+      "height": 2048
+    },
+    "projects": {
+      "id": "ed2c848dcfe649fb8f0af92a7470a535",
+      "sourceScreen": "projects/15844466494168311713/screens/ed2c848dcfe649fb8f0af92a7470a535",
+      "width": 2560,
+      "height": 2048
+    },
+    "testcases": {
+      "id": "f4732034c74d4fb39a064de4b2414709",
+      "sourceScreen": "projects/15844466494168311713/screens/f4732034c74d4fb39a064de4b2414709",
+      "width": 2560,
+      "height": 2520
+    },
+    "ai-chat": {
+      "id": "fcc98d7917474d15a19dada0dc7bcfbe",
+      "sourceScreen": "projects/15844466494168311713/screens/fcc98d7917474d15a19dada0dc7bcfbe",
+      "width": 2688,
+      "height": 2252
+    },
+    "roles": {
+      "id": "16f0f48963474dafa857236509e69eb4",
+      "sourceScreen": "projects/15844466494168311713/screens/16f0f48963474dafa857236509e69eb4",
+      "width": 2560,
+      "height": 2048
+    },
+    "permissions": {
+      "id": "3ce04e7af0554f9b977acb3dc4cef05a",
+      "sourceScreen": "projects/15844466494168311713/screens/3ce04e7af0554f9b977acb3dc4cef05a",
+      "width": 2560,
+      "height": 2048
+    },
+    "test-suites": {
+      "id": "2b35102be3494242824cadadc2c0c8a4",
+      "sourceScreen": "projects/15844466494168311713/screens/2b35102be3494242824cadadc2c0c8a4",
+      "width": 2560,
+      "height": 2870
+    },
+    "requirements": {
+      "id": "ff0e5b145a6f4ac0b4750e7e420a9a6b",
+      "sourceScreen": "projects/15844466494168311713/screens/ff0e5b145a6f4ac0b4750e7e420a9a6b",
+      "width": 2560,
+      "height": 2076
+    },
+    "execution-records": {
+      "id": "e00cd47b013246688fa78b3d35daf1a4",
+      "sourceScreen": "projects/15844466494168311713/screens/e00cd47b013246688fa78b3d35daf1a4",
+      "width": 2560,
+      "height": 2048
+    },
+    "profile": {
+      "id": "6d2a6099f57c466db1322e9562f52d11",
+      "sourceScreen": "projects/15844466494168311713/screens/6d2a6099f57c466db1322e9562f52d11",
+      "width": 2560,
+      "height": 2048
+    }
+  },
+  "metadata": {
+    "userRole": "OWNER"
+  }
+}

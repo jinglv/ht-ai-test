@@ -1,0 +1,9 @@
+.idea
+.vscode
+.DS_Store
+.ruff_cache
+.agents
+.claude
+skills-lock.json
+.uv-cache
+.mcp.json

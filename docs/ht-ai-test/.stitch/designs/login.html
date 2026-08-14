@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>河图智弈 - 企业级AI智能体测试平台登录</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: "#2A76C9", hover: "#2362B0" },
+                        brand: {
+                            dark: "#23344D",
+                            gray: "#8A99B0",
+                            gold: "#D4B86A",
+                            border: "#D7E2F0",
+                            bg: "#F8FAFD"
+                        }
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                    fontFamily: {
+                        headline: ["Noto Serif SC", "serif"],
+                        display: ["Noto Serif SC", "serif"],
+                        body: ["Public Sans", "PingFang SC", "Microsoft YaHei", "sans-serif"],
+                        label: ["Public Sans", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        :root{
+            --primary:#2A76C9; --primary-hover:#2362B0;
+            --gold:#D4B86A; --gold-lt:#EDD79B; --gold-dp:#B8934A;
+            --dark:#23344D;
+        }
+        .material-symbols-outlined{ font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-size:20px; }
+
+        /* ==================== 左侧品牌区：沉浸式高端科技主题 ==================== */
+        .brand-panel{
+            background:
+                radial-gradient(ellipse 90% 80% at 15% 0%, #1B5F86 0%, transparent 55%),
+                radial-gradient(ellipse 70% 60% at 100% 100%, #123E5C 0%, transparent 60%),
+                linear-gradient(140deg,#07192B 0%,#0C2E48 46%,#123C58 100%);
+            position:relative; overflow:hidden;
+        }
+        /* 顶部鎏金光带 */
+        .brand-panel::before{
+            content:""; position:absolute; top:0; left:0; right:0; height:2px; z-index:6;
+            background:linear-gradient(90deg,transparent,rgba(90,180,255,0.4) 25%,rgba(212,184,106,0.95) 52%,rgba(90,180,255,0.4) 78%,transparent);
+        }
+        /* 精细透视网格 */
+        .brand-grid{position:absolute;inset:0;opacity:.28;pointer-events:none;
+            background-image:
+                linear-gradient(rgba(120,190,255,0.08) 1px,transparent 1px),
+                linear-gradient(90deg,rgba(120,190,255,0.08) 1px,transparent 1px);
+            background-size:46px 46px;
+            mask-image:radial-gradient(ellipse 80% 80% at 50% 40%,#000 30%,transparent 78%);
+            -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 40%,#000 30%,transparent 78%);}
+        /* 河图点阵 */
+        .hetu-dots{position:absolute;inset:0;opacity:.45;pointer-events:none;
+            background-image:radial-gradient(rgba(150,200,255,0.22) 1.3px,transparent 1.3px);background-size:30px 30px;
+            mask-image:radial-gradient(ellipse 70% 70% at 50% 45%,#000 20%,transparent 75%);
+            -webkit-mask-image:radial-gradient(ellipse 70% 70% at 50% 45%,#000 20%,transparent 75%);}
+        /* 极光氛围球（缓慢漂移） */
+        .aurora{position:absolute;border-radius:50%;pointer-events:none;filter:blur(14px);}
+        .aurora.a1{width:520px;height:520px;top:-160px;left:-150px;background:radial-gradient(circle,rgba(42,118,201,0.42),transparent 62%);animation:drift1 16s ease-in-out infinite;}
+        .aurora.a2{width:440px;height:440px;bottom:-140px;right:-110px;background:radial-gradient(circle,rgba(90,200,255,0.30),transparent 62%);animation:drift2 20s ease-in-out infinite;}
+        .aurora.a3{width:300px;height:300px;top:38%;right:8%;background:radial-gradient(circle,rgba(212,184,106,0.24),transparent 60%);animation:drift1 22s ease-in-out infinite reverse;}
+        @keyframes drift1{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(40px,30px) scale(1.08);}}
+        @keyframes drift2{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-36px,-28px) scale(1.06);}}
+        /* 科技流线 */
+        .stream-line{background:linear-gradient(90deg,transparent,rgba(120,200,255,0.4),transparent);height:1px;width:100%;position:absolute;left:0;}
+        @keyframes move-stream{0%{transform:translateY(-120px) translateX(-40%);opacity:0;}50%{opacity:1;}100%{transform:translateY(960px) translateX(40%);opacity:0;}}
+        /* 底部山水流线 */
+        .brand-wave{position:absolute;left:0;right:0;bottom:0;height:190px;opacity:.55;pointer-events:none;
+            background:bottom center/100% auto no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='190' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='rgba(120,200,255,0.35)' stroke-width='1.4'%3E%3Cpath d='M-40 128 Q120 86 280 128 T600 128 T920 128'/%3E%3Cpath d='M-40 154 Q120 112 280 154 T600 154 T920 154'/%3E%3Cpath d='M-40 178 Q120 136 280 178 T600 178 T920 178'/%3E%3C/g%3E%3C/svg%3E");}
+
+        /* LOGO：旋转鎏金光环 + 内白盘 */
+        .logo-stage{position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;}
+        .logo-aura{position:absolute;inset:-6px;border-radius:50%;
+            background:conic-gradient(from 0deg,rgba(212,184,106,0.9),rgba(90,180,255,0.7),rgba(212,184,106,0.9),rgba(90,180,255,0.7),rgba(212,184,106,0.9));
+            filter:blur(7px);opacity:.75;animation:spin 9s linear infinite;}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        .brand-logo-ring{position:relative;width:124px;height:124px;border-radius:50%;background:rgba(255,255,255,0.97);
+            display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden;
+            border:2px solid rgba(255,255,255,0.5);
+            box-shadow:0 0 0 6px rgba(255,255,255,0.06),0 12px 40px rgba(7,25,43,0.5);
+            animation:logo-breathe 5s ease-in-out infinite;}
+        .brand-logo-ring img{width:100%;height:100%;object-fit:contain;border-radius:50%;}
+        @keyframes logo-breathe{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+
+        /* 鎏金渐变文字 */
+        .gold-text{background:linear-gradient(92deg,var(--gold-dp),var(--gold-lt) 45%,var(--gold) 60%,var(--gold-lt) 90%);
+            -webkit-background-clip:text;background-clip:text;color:transparent;}
+        /* 标题下的钻石分隔 */
+        .diamond-rule{display:flex;align-items:center;justify-content:center;gap:12px;}
+        .diamond-rule::before,.diamond-rule::after{content:"";height:1px;width:64px;background:linear-gradient(90deg,transparent,rgba(212,184,106,0.7));}
+        .diamond-rule::after{background:linear-gradient(90deg,rgba(212,184,106,0.7),transparent);}
+        .diamond{width:7px;height:7px;transform:rotate(45deg);background:var(--gold);box-shadow:0 0 10px rgba(212,184,106,0.8);}
+
+        /* 特性玻璃卡片 */
+        .feat-item{display:flex;align-items:center;gap:15px;padding:14px 18px;border-radius:14px;width:352px;
+            background:linear-gradient(120deg,rgba(255,255,255,0.09),rgba(255,255,255,0.03));
+            border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(6px);
+            box-shadow:0 6px 20px rgba(7,25,43,0.25);transition:all .3s cubic-bezier(.2,.7,.3,1);}
+        .feat-item:hover{transform:translateY(-3px);border-color:rgba(212,184,106,0.5);
+            background:linear-gradient(120deg,rgba(255,255,255,0.14),rgba(255,255,255,0.05));
+            box-shadow:0 12px 30px rgba(7,25,43,0.4);}
+        .feat-ic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+            background:linear-gradient(135deg,var(--primary),#5A96E5);color:#fff;
+            box-shadow:0 4px 14px rgba(42,118,201,0.45);}
+        .feat-ic .material-symbols-outlined{font-size:23px;}
+        .feat-tt{color:#fff;font-size:14.5px;font-weight:600;letter-spacing:.02em;}
+        .feat-ds{color:rgba(255,255,255,0.62);font-size:12px;margin-top:3px;}
+
+        /* ==================== 右侧登录区 ==================== */
+        .form-side{background:
+            radial-gradient(ellipse 60% 50% at 100% 0%,rgba(212,184,106,0.10),transparent 60%),
+            radial-gradient(ellipse 70% 60% at 0% 100%,rgba(42,118,201,0.08),transparent 60%),
+            linear-gradient(160deg,#FAFCFF 0%,#EAF1F9 100%);}
+        .form-side::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+            background-image:radial-gradient(#D7E2F0 1.4px,transparent 1.4px);background-size:34px 34px;
+            mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,#000 40%,transparent 85%);
+            -webkit-mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,#000 40%,transparent 85%);}
+        .login-card{position:relative;background:rgba(255,255,255,0.82);backdrop-filter:blur(16px);
+            border:1px solid rgba(255,255,255,0.9);
+            box-shadow:0 30px 70px -24px rgba(14,42,62,0.32),0 2px 0 rgba(255,255,255,0.6) inset;}
+        .login-card::before{content:"";position:absolute;top:0;left:24px;right:24px;height:2px;border-radius:2px;
+            background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.7;}
+
+        /* 输入框 */
+        .field{position:relative;display:flex;align-items:center;}
+        .field .material-symbols-outlined{position:absolute;left:14px;color:var(--brand-gray,#8A99B0);transition:color .2s;font-size:20px;}
+        .field input{width:100%;height:48px;padding:0 44px;border-radius:11px;border:1px solid #D7E2F0;background:rgba(255,255,255,0.9);
+            color:#23344D;font-size:14px;outline:none;transition:all .22s;}
+        .field input::placeholder{color:rgba(138,153,176,0.65);}
+        .field input:focus{border-color:var(--primary);background:#fff;
+            box-shadow:0 0 0 4px rgba(42,118,201,0.12),0 6px 18px -8px rgba(42,118,201,0.4);}
+        .field:focus-within .material-symbols-outlined{color:var(--primary);}
+
+        /* 提交按钮：渐变 + 光泽扫过 */
+        .btn-login{position:relative;overflow:hidden;width:100%;height:52px;border-radius:12px;
+            background:linear-gradient(120deg,#2A76C9,#3E8AD8 55%,#2A76C9);color:#fff;font-weight:700;
+            letter-spacing:.35em;text-indent:.35em;
+            box-shadow:0 12px 26px -8px rgba(42,118,201,0.6);transition:all .25s;}
+        .btn-login:hover{transform:translateY(-2px);box-shadow:0 18px 34px -8px rgba(42,118,201,0.7);}
+        .btn-login:active{transform:translateY(0) scale(.99);}
+        .btn-login::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
+            background:linear-gradient(100deg,transparent,rgba(255,255,255,0.5),transparent);
+            transform:skewX(-20deg);transition:left .6s;}
+        .btn-login:hover::after{left:130%;}
+
+        /* 验证码 */
+        .captcha-box{width:132px;height:48px;border-radius:11px;border:1px solid #D7E2F0;overflow:hidden;cursor:pointer;
+            background:linear-gradient(135deg,#EEF4FB,#E2ECF7);display:flex;align-items:center;justify-content:center;
+            position:relative;transition:all .2s;}
+        .captcha-box:hover{border-color:rgba(42,118,201,0.5);}
+        .captcha-box span{color:var(--primary);font-weight:800;font-size:19px;letter-spacing:.28em;font-style:italic;
+            user-select:none;transition:opacity .2s;text-shadow:0 1px 2px rgba(42,118,201,0.2);}
+
+        /* 入场动画 */
+        @keyframes fade-up{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+        .anim{opacity:0;animation:fade-up .7s cubic-bezier(.2,.7,.3,1) forwards;}
+        .d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.35s}
+        .d5{animation-delay:.45s}.d6{animation-delay:.55s}.d7{animation-delay:.65s}
+    </style>
+</head>
+<body class="h-full font-body bg-brand-bg antialiased overflow-hidden">
+<main class="flex h-full w-full">
+<!-- ==================== 左侧品牌区 ==================== -->
+<section class="brand-panel hidden md:flex w-[56%] h-full flex-col items-center justify-center relative overflow-hidden">
+<div class="brand-grid"></div>
+<div class="hetu-dots"></div>
+<div class="aurora a1"></div>
+<div class="aurora a2"></div>
+<div class="aurora a3"></div>
+<div class="stream-line" style="top:20%;animation:move-stream 6s linear infinite;"></div>
+<div class="stream-line" style="top:48%;animation:move-stream 6s linear infinite 2s;"></div>
+<div class="stream-line" style="top:76%;animation:move-stream 6s linear infinite 4s;"></div>
+<div class="brand-wave"></div>
+
+<!-- 品牌内容 -->
+<div class="z-10 flex flex-col items-center text-center px-8">
+<div class="logo-stage mb-8 anim d1">
+<div class="logo-aura"></div>
+<div class="brand-logo-ring">
+<img src="../../logo.png" alt="河图智弈"/>
+</div>
+</div>
+<h1 style="font-family:'Noto Serif SC',serif;" class="font-black text-[46px] leading-none text-white tracking-[0.18em] mb-5 anim d2">河图智弈</h1>
+<div class="diamond-rule mb-5 anim d3"><span class="diamond"></span></div>
+<p class="text-[16px] tracking-[0.24em] font-semibold mb-2 gold-text anim d3">AI 智能体驱动 · 企业级自动化测试平台</p>
+<p class="text-[13px] tracking-[0.18em] anim d4" style="color:rgba(255,255,255,0.55)">循河图数理 · 以智弈控测</p>
+
+<!-- 特性亮点 -->
+<div class="flex flex-col gap-3.5 mt-11">
+<div class="feat-item anim d5">
+<div class="feat-ic"><span class="material-symbols-outlined">smart_toy</span></div>
+<div class="text-left"><div class="feat-tt">AI 智能体调度</div><div class="feat-ds">多智能体协同，自动编排测试任务</div></div>
+</div>
+<div class="feat-item anim d6">
+<div class="feat-ic"><span class="material-symbols-outlined">bolt</span></div>
+<div class="text-left"><div class="feat-tt">用例智能生成</div><div class="feat-ds">依据需求文档，秒级产出测试用例</div></div>
+</div>
+<div class="feat-item anim d7">
+<div class="feat-ic"><span class="material-symbols-outlined">insights</span></div>
+<div class="text-left"><div class="feat-tt">数据洞察分析</div><div class="feat-ds">通过率、缺陷分布，一键可视化</div></div>
+</div>
+</div>
+</div>
+
+<!-- 页脚 -->
+<div class="absolute bottom-8 left-0 w-full text-center z-10">
+<span class="text-[12px] font-medium tracking-[0.2em]" style="color:rgba(255,255,255,0.4)">© 2026 河图智弈 · AI 智能体测试管理平台</span>
+</div>
+</section>
+
+<!-- ==================== 右侧登录区 ==================== -->
+<section class="form-side w-full md:w-[44%] h-full flex items-center justify-center p-6 relative overflow-hidden">
+<div class="w-full max-w-[440px] rounded-2xl login-card p-11 sm:p-12 z-10 anim d2">
+
+<!-- 移动端 mini logo -->
+<div class="md:hidden flex justify-center mb-6">
+<div class="w-16 h-16 rounded-full bg-white border border-brand-border shadow-md overflow-hidden flex items-center justify-center p-2">
+<img src="../../logo.png" alt="河图智弈" class="w-full h-full object-contain rounded-full"/>
+</div>
+</div>
+
+<!-- 表单标题 -->
+<div class="mb-9">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-[4px] h-7 rounded-full" style="background:linear-gradient(180deg,var(--gold),var(--gold-dp));"></div>
+<h2 class="text-[26px] font-headline font-bold text-brand-dark tracking-wide">系统登录</h2>
+</div>
+<p class="text-[13px] text-brand-gray tracking-wide pl-[16px]">欢迎回来，请登录您的测试平台账号</p>
+<div class="h-[1px] w-full mt-5" style="background:linear-gradient(90deg,rgba(212,184,106,0.5),transparent);"></div>
+</div>
+
+<!-- 登录表单 -->
+<form class="space-y-5" onsubmit="event.preventDefault(); window.location.href='home.html'; return false;">
+<div class="field">
+<span class="material-symbols-outlined">person</span>
+<input placeholder="请输入登录账号" type="text"/>
+</div>
+
+<div class="field">
+<span class="material-symbols-outlined">lock</span>
+<input id="passwordInput" placeholder="请输入登录密码" type="password" style="padding-right:44px;"/>
+<button class="absolute right-3 text-brand-gray hover:text-primary transition-colors" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined" id="eyeIcon">visibility</span>
+</button>
+</div>
+
+<div class="flex gap-3">
+<div class="field flex-1">
+<span class="material-symbols-outlined">verified_user</span>
+<input placeholder="验证码" type="text"/>
+</div>
+<div class="captcha-box" id="captchaBox">
+<span>4 A 9 K</span>
+</div>
+</div>
+
+<div class="flex items-center justify-between text-[13px] pt-1">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="w-4 h-4 rounded border-brand-border text-primary focus:ring-primary focus:ring-offset-0" type="checkbox"/>
+<span class="text-brand-gray group-hover:text-brand-dark transition-colors">记住登录状态</span>
+</label>
+<a class="text-primary hover:text-primary-hover font-medium transition-colors" href="#">忘记密码？</a>
+</div>
+
+<button class="btn-login flex items-center justify-center" type="submit">登 录</button>
+</form>
+
+<!-- 页脚版权 -->
+<div class="mt-10 text-center">
+<p class="text-[12px] text-brand-gray tracking-wide">© 2026 河图智弈 测试管理平台 · 版权所有</p>
+</div>
+</div>
+</section>
+</main>
+
+<script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('passwordInput');
+            const eyeIcon = document.getElementById('eyeIcon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.textContent = 'visibility_off';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.textContent = 'visibility';
+            }
+        }
+
+        // 验证码刷新
+        document.getElementById('captchaBox').addEventListener('click', function() {
+            const codes = ['7 G 2 W', '3 X 8 M', '5 P 1 L', '9 B 6 R', '4 A 9 K', 'K 6 T 2'];
+            const span = this.querySelector('span');
+            span.style.opacity = '0';
+            setTimeout(() => {
+                span.textContent = codes[Math.floor(Math.random() * codes.length)];
+                span.style.opacity = '1';
+            }, 200);
+        });
+    </script>
+</body></html>
