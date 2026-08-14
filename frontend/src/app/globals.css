@@ -1,26 +1,65 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F8FAFD;
+  --foreground: #23344D;
+
+  /* 品牌色 */
+  --color-cerulean: #2A76C9;
+  --color-cerulean-dark: #2362B0;
+  --color-cerulean-light: #3D88E0;
+  --color-gold: #D4B86A;
+  --color-gold-light: #E5C97A;
+  --color-slate: #23344D;
+  --color-slate-light: #3A4F6B;
+  --color-smoke: #D7E2F0;
+  --color-mist: #8A99B0;
+
+  /* 功能色 */
+  --color-success: #36B37E;
+  --color-warning: #FF8C38;
+  --color-danger: #E54C4C;
+
+  /* 渐变断点 */
+  --gradient-nav: linear-gradient(135deg, #0E2A3E 0%, #1A4966 50%, #235A7D 100%);
+  --gradient-btn: linear-gradient(135deg, #2A76C9 0%, #3D88E0 100%);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-cerulean: var(--color-cerulean);
+  --color-cerulean-dark: var(--color-cerulean-dark);
+  --color-cerulean-light: var(--color-cerulean-light);
+  --color-gold: var(--color-gold);
+  --color-slate: var(--color-slate);
+  --color-smoke: var(--color-smoke);
+  --color-mist: var(--color-mist);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-smoke);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-mist);
 }

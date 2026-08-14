@@ -11,40 +11,45 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # ===================================应用基本配置=============================
-    APP_NAME: str = ""
+    APP_NAME: str = "河图智弈"
     DEBUG: bool = True
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 9529
     RELOAD: bool = True
-    VERSION: str = "1.0.0"
-    DESCRIPTION: str = ""
+    VERSION: str = "v1.0.0"
+    DESCRIPTION: str = "企业级AI驱动的测试平台"
+
+    # ===================================安全配置=============================
+    SECRET_KEY: str = "change-me-in-production-use-a-strong-random-key"
 
     # ===================================日期时间格式=============================
     DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
+    # ===================================数据库配置=============================
+    DATABASE_NAME: str = "ht_db"
+    DATABASE_HOST: str = "localhost"
+    DATABASE_PORT: int = 5432
+    DATABASE_USER: str = "postgres"
+    DATABASE_PASSWORD: str = ""
+    # 开发期自动建表开关（生产环境请关闭）
+    DB_GENERATE_SCHEMAS_ON_STARTUP: bool = False
+
+    # ===================================LLM 配置=============================
+    LLM_BASE_URL: str = "https://api.deepseek.com"
+    LLM_MODEL: str = "deepseek-chat"
+    LLM_API_KEY: str = ""
+    LLM_MAX_INPUT_TOKENS: int = 131072
+
+    # ===================================多模态LLM 配置=============================
+    VL_BINDING_HOST: str = "https://ark.cn-beijing.volces.com/api/v3"
+    VL_MODEL: str = "doubao-1-5-vision-pro-32k-250115"
+    VL_BINDING_API_KEY: str | None = None
+    VL_TIMEOUT: int = 150
+
     class Config:
         env_file = ".env"
         case_sensitive = True
-        extra = "ignore"  # 忽略未定义的环境变量
-
-    # ===================================数据库配置=============================
-    DATABASE_NAME: str = "test_db"
-    DATABASE_HOST: str = "localhost"
-    DATABASE_PORT: int = 3306
-    DATABASE_USER: str = "root"
-    DATABASE_PASSWORD: str = "test"
-
-    # ===================================LLM 配置=============================
-    LLM_BASE_URL: str = "https://api.openai.com/v1"
-    LLM_MODEL: str = "gpt-4o-mini"
-    LLM_API_KEY: str = ""
-    LLM_MAX_INPUT_TOKENS: int = 131072  # 模型最大输入 token 数，用于 summarization 中间件自动截断
-
-    # ===================================多模态LLM 配置=============================
-    VL_BINDING_HOST: str = "https://api.openai.com/v1"
-    VL_MODEL: str = "gpt-4o"
-    VL_BINDING_API_KEY: str | None = None  # 视觉模型 API Key
-    VL_TIMEOUT: int = 150
+        extra = "ignore"
 
 
 def get_settings() -> Settings:

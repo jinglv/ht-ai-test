@@ -7,40 +7,35 @@
 数据库初始化与配置
 
 功能:
-- Tortoise ORM 初始化（asyncpg 驱动）
+- Tortoise ORM 初始化（asyncpg 驱动，PostgreSQL）
 - 数据库连接/关闭管理
-- 连接串由 settings 中 PLATFORM_DB_* 字段拼接
+- 连接串由 settings 中 DATABASE_* 字段拼接
 """
 from loguru import logger
 from tortoise import Tortoise
 
-from src.hetu.settings import settings
+from hetu.settings import settings
 
 # ==================================ORM 配置==============================
 TORTOISE_ORM = {
     "connections": {
-        "default": {
-            "engine": "tortoise.backends.asyncpg",
-            "credentials": {
-                "host": settings.DATABASE_HOST,
-                "port": settings.DATABASE_PORT,
-                "user": settings.DATABASE_USER,
-                "password": settings.DATABASE_PASSWORD,
-                "database": settings.DATABASE_NAME,
-                "charset": "utf8mb4",
-            }
-        }
+        "default": f"postgres://{settings.DATABASE_USER}:{settings.DATABASE_PASSWORD}"
+                   f"@{settings.DATABASE_HOST}:{settings.DATABASE_PORT}/{settings.DATABASE_NAME}"
     },
     "apps": {
         "models": {  # 统一的 app label
             "models": [
+                "hetu.modules.rbac.models",
+                "hetu.modules.project.models",
+                "hetu.modules.testcase.models",
+                "hetu.modules.ai_chat.models",
             ],
             "default_connection": "default",
             "migrations": "migrations",
         },
     },
     "use_tz": False,
-    "timezone": "Asia/Shanghai"
+    "timezone": "Asia/Shanghai",
 }
 
 
@@ -57,7 +52,7 @@ async def init_db() -> None:
         await Tortoise.generate_schemas()
     logger.info(
         f"数据库初始化完成: "
-        f"{settings.PLATFORM_DB_HOST}:{settings.PLATFORM_DB_PORT}/{settings.PLATFORM_DB_DATABASE}"
+        f"{settings.DATABASE_HOST}:{settings.DATABASE_PORT}/{settings.DATABASE_NAME}"
     )
 
 
