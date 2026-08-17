@@ -21,6 +21,8 @@ from hetu.core.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from hetu.core.rbac import apply_data_scope_filter, get_data_scope, get_user_project_ids
+from hetu.shared.enums import DataScope
 from hetu.modules.project.models import Project, ProjectModule
 from hetu.modules.rbac.models import User
 from hetu.modules.testcase.models import (
@@ -71,9 +73,22 @@ async def list_requirement_docs(
     file_type: str | None = None,
     page: int = 1,
     page_size: int = 20,
+    user: dict | None = None,
 ) -> dict:
     """分页查询需求文档"""
     qs = RequirementDoc.filter(is_deleted=False)
+
+    # 数据权限过滤：需求文档以 project_id 关联项目
+    if user:
+        scope = await get_data_scope(user)
+        if scope == DataScope.SELF:
+            qs = qs.filter(uploaded_by_id=user["user_id"])
+        elif scope == DataScope.PROJECT:
+            project_ids = await get_user_project_ids(user["user_id"])
+            if project_ids:
+                qs = qs.filter(project_id__in=project_ids)
+            else:
+                return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
     if project_id:
         qs = qs.filter(project_id=project_id)
@@ -217,9 +232,22 @@ async def list_testcases(
     page: int = 1,
     page_size: int = 20,
     ordering: list[str] | None = None,
+    user: dict | None = None,
 ) -> dict:
     """分页查询测试用例"""
     qs = TestCase.filter(is_deleted=False)
+
+    # 数据权限过滤
+    if user:
+        scope = await get_data_scope(user)
+        if scope == DataScope.SELF:
+            qs = qs.filter(creator_id=user["user_id"])
+        elif scope == DataScope.PROJECT:
+            project_ids = await get_user_project_ids(user["user_id"])
+            if project_ids:
+                qs = qs.filter(project_id__in=project_ids)
+            else:
+                return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
     if project_id:
         qs = qs.filter(project_id=project_id)
@@ -417,9 +445,22 @@ async def list_suites(
     project_id: int | None = None,
     page: int = 1,
     page_size: int = 20,
+    user: dict | None = None,
 ) -> dict:
     """分页查询测试套件"""
     qs = TestSuite.filter(is_deleted=False)
+
+    # 数据权限过滤
+    if user:
+        scope = await get_data_scope(user)
+        if scope == DataScope.SELF:
+            qs = qs.filter(creator_id=user["user_id"])
+        elif scope == DataScope.PROJECT:
+            project_ids = await get_user_project_ids(user["user_id"])
+            if project_ids:
+                qs = qs.filter(project_id__in=project_ids)
+            else:
+                return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
     if project_id:
         qs = qs.filter(project_id=project_id)
@@ -534,9 +575,25 @@ async def list_executions(
     result: str | None = None,
     page: int = 1,
     page_size: int = 20,
+    user: dict | None = None,
 ) -> dict:
     """分页查询执行记录"""
     qs = TestExecution.all()
+
+    # 数据权限过滤：执行记录通过 testcase 关联项目
+    # SELF 范围：仅显示当前用户创建的用例的执行记录（testcase.creator_id）
+    # PROJECT 范围：显示用户所属项目的所有执行记录
+    if user:
+        scope = await get_data_scope(user)
+        if scope == DataScope.SELF:
+            # 通过 testcase 关联 creator_id
+            qs = qs.filter(testcase__creator_id=user["user_id"])
+        elif scope == DataScope.PROJECT:
+            project_ids = await get_user_project_ids(user["user_id"])
+            if project_ids:
+                qs = qs.filter(testcase__project_id__in=project_ids)
+            else:
+                return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
     if project_id:
         qs = qs.filter(testcase__project_id=project_id)
@@ -579,11 +636,29 @@ async def get_execution_stats(
     group_by: str = "result",
     start_date: datetime | None = None,
     end_date: datetime | None = None,
+    user: dict | None = None,
 ) -> dict:
     """执行统计"""
     from tortoise.expressions import Sum, Count
 
     qs = TestExecution.all()
+
+    # 数据权限过滤
+    if user:
+        scope = await get_data_scope(user)
+        if scope == DataScope.SELF:
+            qs = qs.filter(executed_by_id=user["user_id"])
+        elif scope == DataScope.PROJECT:
+            project_ids = await get_user_project_ids(user["user_id"])
+            if project_ids:
+                qs = qs.filter(testcase__project_id__in=project_ids)
+            else:
+                return {
+                    "group_by": group_by,
+                    "groups": [],
+                    "total": 0, "passed": 0, "failed": 0, "blocked": 0, "skipped": 0,
+                    "pass_rate": 0.0,
+                }
 
     if project_id:
         qs = qs.filter(testcase__project_id=project_id)

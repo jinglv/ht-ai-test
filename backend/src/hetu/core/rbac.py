@@ -102,7 +102,7 @@ async def get_data_scope(current_user: dict, project_member_projects: list[int] 
     return DataScope.SELF
 
 
-def apply_data_scope_filter(
+async def apply_data_scope_filter(
     queryset,
     scope: DataScope,
     current_user: dict,
@@ -111,14 +111,14 @@ def apply_data_scope_filter(
     project_field: str = "project_id",
 ):
     """
-    根据数据权限范围向 queryset 注入过滤条件。
+    根据数据权限范围向 queryset 注入过滤条件（异步版本）。
 
     :param queryset: Tortoise-ORM queryset
     :param scope: 数据权限范围
-    :param current_user: 当前用户信息
-    :param project_member_projects: 用户所属项目列表
-    :param creator_field: 创建人字段名
-    :param project_field: 项目字段名
+    :param current_user: 当前用户信息（含 user_id）
+    :param project_member_projects: 用户所属项目列表（PROJECT 范围用）
+    :param creator_field: 创建人字段名（SELF 范围用）
+    :param project_field: 项目字段名（PROJECT 范围用）
     :return: 过滤后的 queryset
     """
     if scope == DataScope.ALL:
@@ -129,3 +129,13 @@ def apply_data_scope_filter(
         return queryset.filter(**{f"{project_field}__in": project_member_projects})
     # SELF
     return queryset.filter(**{creator_field: current_user["user_id"]})
+
+
+async def get_user_project_ids(user_id: int) -> list[int]:
+    """
+    获取用户所属的所有项目 ID 列表（作为成员）。
+    """
+    from hetu.modules.project.models import ProjectMember
+
+    rows = await ProjectMember.filter(user_id=user_id).values_list("project_id", flat=True)
+    return list(rows)

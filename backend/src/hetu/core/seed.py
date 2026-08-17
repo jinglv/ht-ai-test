@@ -9,15 +9,12 @@
 在数据库迁移完成后执行，创建内置角色、权限点和 admin 账户。
 """
 import asyncio
-from datetime import datetime
 
 from loguru import logger
 
-from hetu.config import init_db, close_db
+from hetu.config import close_db, init_db
 from hetu.core.security import hash_password
 from hetu.modules.rbac.models import Permission, Role, User
-from hetu.shared.enums import DataScope, PermissionType
-
 
 # 内置角色定义
 BUILTIN_ROLES = [
@@ -51,7 +48,7 @@ BUILTIN_ROLES = [
     },
 ]
 
-# 内置权限点定义（13个）
+# 内置权限点定义
 BUILTIN_PERMISSIONS = [
     # 菜单权限
     {"name": "首页", "code": "dashboard:view", "type": "menu", "parent_id": None, "sort": 1},
@@ -71,6 +68,18 @@ BUILTIN_PERMISSIONS = [
     {"name": "用户管理", "code": "user:manage", "type": "action", "parent_id": None, "sort": 40},
     {"name": "角色管理", "code": "role:manage", "type": "action", "parent_id": None, "sort": 41},
     {"name": "权限管理", "code": "permission:manage", "type": "action", "parent_id": None, "sort": 42},
+    {"name": "查看用户", "code": "user:view", "type": "action", "parent_id": None, "sort": 43},
+    {"name": "创建用户", "code": "user:create", "type": "action", "parent_id": None, "sort": 44},
+    {"name": "更新用户", "code": "user:update", "type": "action", "parent_id": None, "sort": 45},
+    {"name": "删除用户", "code": "user:delete", "type": "action", "parent_id": None, "sort": 46},
+    {"name": "查看角色", "code": "role:view", "type": "action", "parent_id": None, "sort": 47},
+    {"name": "创建角色", "code": "role:create", "type": "action", "parent_id": None, "sort": 48},
+    {"name": "更新角色", "code": "role:update", "type": "action", "parent_id": None, "sort": 49},
+    {"name": "删除角色", "code": "role:delete", "type": "action", "parent_id": None, "sort": 50},
+    {"name": "查看权限", "code": "permission:view", "type": "action", "parent_id": None, "sort": 51},
+    {"name": "创建权限", "code": "permission:create", "type": "action", "parent_id": None, "sort": 52},
+    {"name": "更新权限", "code": "permission:update", "type": "action", "parent_id": None, "sort": 53},
+    {"name": "删除权限", "code": "permission:delete", "type": "action", "parent_id": None, "sort": 54},
 ]
 
 # 默认 admin 账户
@@ -139,14 +148,13 @@ async def seed_admin(role_map: dict[str, Role]) -> None:
     if super_role:
         await admin.roles.add(super_role)
 
-    logger.info(f"创建 admin 账户: {admin.username} (密码: {ADMIN_USER['password']})")
+    logger.info(f"创建 admin 账户: {admin.username}（首次登录后请及时修改默认密码）")
 
 
 async def run_seed() -> None:
     """执行种子数据初始化"""
     logger.info("开始初始化种子数据...")
 
-    from hetu.config import init_db, close_db
     await init_db()
 
     try:

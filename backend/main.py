@@ -4,7 +4,10 @@
 # Date    ：2026/7/3 16:08
 # Software：PyCharm
 """
-FastAPI 应用入口
+河图智弈 FastAPI 应用入口
+
+本文件作为 ASGI 入口，FastAPI 应用实例通过 ``main:app`` 暴露。
+启动方式：``uv run uvicorn main:app --reload``（在 backend/ 目录下执行）
 
 功能:
 - 初始化 Tortoise ORM 数据库连接
@@ -38,68 +41,72 @@ from hetu.modules.testcase.router import (
     suites_router,
     testcase_router,
 )
+from hetu.modules.ai_chat.router import ai_router
+from hetu.settings import settings
 
 
 # ===================================应用生命周期=============================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理"""
-    # 启动：初始化数据库
+    """应用生命周期管理：启动时初始化数据库，关闭时清理连接。"""
     await init_db()
-    # 注册路由需要在 lifespan 之后，但 FastAPI 的路由在 app 创建时已注册
     yield
-    # 关闭：关闭数据库连接
     await close_db()
 
 
-def create_app() -> FastAPI:
-    """创建并配置 FastAPI 应用"""
-    app = FastAPI(
-        title="河图智弈 API",
-        description="企业级 AI 智能体测试平台",
-        version="v1.0.0",
-        lifespan=lifespan,
+# ==================创建 FastAPI 应用实例=================
+app = FastAPI(
+    title="河图智弈 API",
+    description="企业级 AI 智能体测试平台",
+    version="v1.0.0",
+    lifespan=lifespan,
+)
+
+# CORS 中间件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 生产环境替换为实际前端域名
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 注册全局异常处理器
+register_exception_handlers(app)
+
+# 注册路由（统一前缀 /api/v1）
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
+app.include_router(roles_router, prefix="/api/v1")
+app.include_router(permissions_router, prefix="/api/v1")
+app.include_router(projects_router, prefix="/api/v1")
+app.include_router(modules_router, prefix="/api/v1")
+app.include_router(members_router, prefix="/api/v1")
+app.include_router(testcase_router, prefix="/api/v1")
+app.include_router(suites_router, prefix="/api/v1")
+app.include_router(requirements_router, prefix="/api/v1")
+app.include_router(executions_router, prefix="/api/v1")
+app.include_router(ai_generate_router, prefix="/api/v1")
+app.include_router(ai_router, prefix="/api/v1")
+
+
+# 健康检查
+@app.get("/health", tags=["系统"])
+async def health_check():
+    return json_ok({"status": "ok", "service": "hetu-api", "version": "v1.0.0"})
+
+
+@app.get("/", tags=["系统"])
+async def root():
+    return json_ok({"message": "河图智弈 API 服务", "version": "v1.0.0"})
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.RELOAD,
     )
-
-    # CORS 中间件
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # 生产环境替换为实际前端域名
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # 注册全局异常处理器
-    register_exception_handlers(app)
-
-    # 注册路由（统一前缀 /api/v1）
-    app.include_router(auth_router, prefix="/api/v1")
-    app.include_router(users_router, prefix="/api/v1")
-    app.include_router(roles_router, prefix="/api/v1")
-    app.include_router(permissions_router, prefix="/api/v1")
-    app.include_router(projects_router, prefix="/api/v1")
-    app.include_router(modules_router, prefix="/api/v1")
-    app.include_router(members_router, prefix="/api/v1")
-    app.include_router(testcase_router, prefix="/api/v1")
-    app.include_router(suites_router, prefix="/api/v1")
-    app.include_router(requirements_router, prefix="/api/v1")
-    app.include_router(executions_router, prefix="/api/v1")
-    app.include_router(ai_generate_router, prefix="/api/v1")
-    # AI 对话路由（SSE）
-    from hetu.modules.ai_chat.router import ai_router
-    app.include_router(ai_router, prefix="/api/v1")
-
-    # 健康检查
-    @app.get("/health", tags=["系统"])
-    async def health_check():
-        return json_ok({"status": "ok", "service": "hetu-api", "version": "v1.0.0"})
-
-    @app.get("/", tags=["系统"])
-    async def root():
-        return json_ok({"message": "河图智弈 API 服务", "version": "v1.0.0"})
-
-    return app
-
-
-app = create_app()

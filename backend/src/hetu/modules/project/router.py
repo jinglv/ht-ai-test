@@ -59,7 +59,7 @@ async def list_projects_api(
     user: dict = Depends(require_permission("project:view")),
 ):
     """分页查询项目列表"""
-    result = await list_projects(page, page_size, keyword, status)
+    result = await list_projects(page, page_size, keyword, status, user=user)
     return json_ok(paginated(result["items"], result["total"], result["page"], result["page_size"]))
 
 
@@ -96,7 +96,7 @@ async def get_project_overview_api(
     user: dict = Depends(require_permission("project:view")),
 ):
     """项目概览统计"""
-    data = await get_project_overview(project_id)
+    data = await get_project_overview(project_id, user=user)
     return json_ok(data)
 
 
@@ -165,7 +165,7 @@ async def list_modules_api(
     user: dict = Depends(require_permission("project:view")),
 ):
     """获取项目模块树"""
-    tree = await list_modules(project_id)
+    tree = await list_modules(project_id, user=user)
     return json_ok(tree)
 
 

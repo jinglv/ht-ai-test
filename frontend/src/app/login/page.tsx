@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { useAuth } from '@/contexts/AuthContext'
-import { getCaptcha } from '@/lib/api'
+import { getCaptcha, login } from '@/lib/api'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -14,18 +12,8 @@ export default function LoginPage() {
   const [captchaImage, setCaptchaImage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login, user } = useAuth()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (user) {
-      router.push('/dashboard')
-    }
-  }, [user, router])
-
-  useEffect(() => {
-    refreshCaptcha()
-  }, [])
+  const [showPassword, setShowPassword] = useState(false)
+  const [remember, setRemember] = useState(false)
 
   const refreshCaptcha = async () => {
     try {
@@ -38,158 +26,209 @@ export default function LoginPage() {
     }
   }
 
+  useEffect(() => {
+    let active = true
+    getCaptcha().then((res) => {
+      if (active) {
+        setCaptchaId(res.data.captcha_id)
+        setCaptchaImage(res.data.image)
+      }
+    }).catch(() => { if (active) setError('获取验证码失败') })
+    return () => { active = false }
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
-      await login(username, password, captchaId, captchaCode)
-      router.push('/dashboard')
+      const res = await login(username, password, captchaId, captchaCode, remember)
+      localStorage.setItem('hetu_token', res.data.token)
+      window.location.assign('/dashboard')
     } catch {
       setError('登录失败，请检查用户名密码和验证码')
-      refreshCaptcha()
+      void refreshCaptcha()
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* 左 56% 品牌区 */}
-      <div className="hidden lg:flex lg:w-[56%] relative bg-gradient-to-br from-[#0E2A3E] via-[#1A4966] to-[#235A7D] overflow-hidden">
-        {/* 装饰性背景 */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-64 h-64 border border-[#D4B86A]/30 rounded-full" />
-          <div className="absolute bottom-32 right-32 w-96 h-96 border border-[#2A76C9]/20 rounded-full" />
-          <div className="absolute top-1/2 left-1/3 w-48 h-48 border border-[#D4B86A]/20 rounded-full" />
-        </div>
+    <main className="flex h-full w-full">
+      {/* ==================== 左 56% 品牌区 ==================== */}
+      <section className="brand-panel hidden md:flex w-[56%] h-full flex-col items-center justify-center relative overflow-hidden">
+        {/* 透视网格 */}
+        <div className="brand-grid"></div>
+        {/* 河图点阵 */}
+        <div className="hetu-dots"></div>
+        {/* 极光光球 */}
+        <div className="aurora a1"></div>
+        <div className="aurora a2"></div>
+        <div className="aurora a3"></div>
+        {/* 科技流线 */}
+        <div className="stream-line" style={{ top: '20%', animation: 'move-stream 6s linear infinite' }}></div>
+        <div className="stream-line" style={{ top: '48%', animation: 'move-stream 6s linear infinite 2s' }}></div>
+        <div className="stream-line" style={{ top: '76%', animation: 'move-stream 6s linear infinite 4s' }}></div>
+        {/* 山水流线 */}
+        <div className="brand-wave"></div>
 
-        <div className="relative z-10 flex flex-col items-center justify-center w-full px-12">
-          {/* 旋转鎏金光环 LOGO */}
-          <div className="relative w-32 h-32 mb-8">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#2A76C9]/30 to-transparent animate-pulse" />
-            <div className="absolute inset-2 rounded-full border-2 border-[#D4B86A]/40 animate-spin" style={{ animationDuration: '20s' }} />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2A76C9] to-[#3D88E0] flex items-center justify-center shadow-2xl">
-                <span className="text-white text-3xl font-bold">河图</span>
-              </div>
+        {/* 品牌内容 */}
+        <div className="z-10 flex flex-col items-center text-center px-8">
+          {/* Logo：旋转鎏金光环 + 呼吸动画白盘 */}
+          <div className="logo-stage mb-8 anim d1">
+            <div className="logo-aura"></div>
+            <div className="brand-logo-ring">
+              <Image src="/logo.png" alt="河图智弈" width={124} height={124} priority />
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-white mb-4 tracking-wide">
+          <h1 className="text-[46px] font-black leading-none text-white tracking-[0.18em] mb-5 anim d2 font-brand">
             河图智弈
           </h1>
-          <p className="text-white/70 text-lg mb-8">
-            企业级 AI 驱动的测试管理平台
+          <div className="diamond-rule mb-5 anim d3">
+            <span className="diamond"></span>
+          </div>
+          <p className="text-[16px] tracking-[0.24em] font-semibold mb-2 gold-text anim d3">
+            AI 智能体驱动 · 企业级自动化测试平台
+          </p>
+          <p className="text-[13px] tracking-[0.18em] anim d4" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            循河图数理 · 以智弈控测
           </p>
 
-          <div className="w-full max-w-md space-y-4">
-            <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="w-8 h-8 rounded-lg bg-[#2A76C9]/30 flex items-center justify-center text-[#D4B86A]">01</div>
-              <span>智能需求分析与用例生成</span>
+          {/* 特性卡片 */}
+          <div className="flex flex-col gap-3.5 mt-11">
+            <div className="feat-item anim d5">
+              <div className="feat-ic"><span className="material-symbols-outlined">smart_toy</span></div>
+              <div className="text-left">
+                <div className="feat-tt">AI 智能体调度</div>
+                <div className="feat-ds">多智能体协同，自动编排测试任务</div>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="w-8 h-8 rounded-lg bg-[#2A76C9]/30 flex items-center justify-center text-[#D4B86A]">02</div>
-              <span>全流程测试项目管理</span>
+            <div className="feat-item anim d6">
+              <div className="feat-ic"><span className="material-symbols-outlined">bolt</span></div>
+              <div className="text-left">
+                <div className="feat-tt">用例智能生成</div>
+                <div className="feat-ds">依据需求文档，秒级产出测试用例</div>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-white/60 text-sm">
-              <div className="w-8 h-8 rounded-lg bg-[#2A76C9]/30 flex items-center justify-center text-[#D4B86A]">03</div>
-              <span>对话式 AI 数据分析</span>
+            <div className="feat-item anim d7">
+              <div className="feat-ic"><span className="material-symbols-outlined">insights</span></div>
+              <div className="text-left">
+                <div className="feat-tt">数据洞察分析</div>
+                <div className="feat-ds">通过率、缺陷分布，一键可视化</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 右 44% 登录卡片 */}
-      <div className="flex-1 flex items-center justify-center bg-[#F8FAFD] p-6">
-        <div className="w-full max-w-[440px]">
-          {/* 移动端 Logo */}
-          <div className="lg:hidden flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#2A76C9] to-[#3D88E0] flex items-center justify-center text-white text-xl font-bold shadow-lg mb-3">
-              河图
+        {/* 页脚 */}
+        <div className="absolute bottom-8 left-0 w-full text-center z-10">
+          <span className="text-[12px] font-medium tracking-[0.2em]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            &copy; 2026 河图智弈 · AI 智能体测试管理平台
+          </span>
+        </div>
+      </section>
+
+      {/* ==================== 右 44% 登录区 ==================== */}
+      <section className="form-side w-full md:w-[44%] h-full flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="w-full max-w-[440px] rounded-2xl login-card p-11 sm:p-12 z-10 anim d2">
+          {/* 移动端 mini logo */}
+          <div className="md:hidden flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-white border border-[#D7E2F0] shadow-md overflow-hidden flex items-center justify-center p-2">
+              <Image src="/logo.png" alt="河图智弈" width={56} height={56} className="w-full h-full object-contain rounded-full" />
             </div>
-            <h1 className="text-2xl font-bold text-[#23344D]">河图智弈</h1>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg border border-[#D7E2F0] p-8">
-            <h2 className="text-2xl font-bold text-[#23344D] mb-1">账号登录</h2>
-            <p className="text-[#8A99B0] text-sm mb-6">请输入您的账号信息</p>
+          {/* 表单标题 */}
+          <div className="mb-9">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-[4px] h-7 rounded-full" style={{ background: 'linear-gradient(180deg, var(--jin), #B8934A)' }}></div>
+              <h2 className="text-[26px] font-brand font-bold text-[#23344D] tracking-wide">系统登录</h2>
+            </div>
+            <p className="text-[13px] text-[#8A99B0] tracking-wide pl-[16px]">欢迎回来，请登录您的测试平台账号</p>
+            <div className="h-[1px] w-full mt-5" style={{ background: 'linear-gradient(90deg, rgba(212,184,106,0.5), transparent)' }}></div>
+          </div>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-                {error}
-              </div>
-            )}
+          {/* 登录表单 */}
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div className="field">
+              <span className="material-symbols-outlined">person</span>
+              <input
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="请输入登录账号"
+                required
+              />
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-[#23344D] mb-1.5">
-                  用户名
-                </label>
+            <div className="field">
+              <span className="material-symbols-outlined">lock</span>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="请输入登录密码"
+                style={{ paddingRight: 44 }}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 flex items-center text-[#8A99B0] hover:text-[#2A76C9] transition-colors"
+              >
+                <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
+              </button>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="field flex-1">
+                <span className="material-symbols-outlined">verified_user</span>
                 <input
                   type="text"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[#D7E2F0] text-[#23344D] placeholder-[#8A99B0] focus:outline-none focus:ring-2 focus:ring-[#2A76C9]/30 focus:border-[#2A76C9] transition-all"
-                  placeholder="请输入用户名"
+                  value={captchaCode}
+                  onChange={e => setCaptchaCode(e.target.value)}
+                  placeholder="验证码"
                   required
                 />
               </div>
+              <div className="captcha-box" onClick={refreshCaptcha} id="captchaBox">
+                {captchaImage.startsWith('data:image/') ? (
+                  <Image src={captchaImage} alt="验证码" width={132} height={48} unoptimized className="h-full w-full object-contain" />
+                ) : (
+                  <span>{captchaImage || '点击刷新'}</span>
+                )}
+              </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#23344D] mb-1.5">
-                  密码
-                </label>
+            <div className="flex items-center justify-between text-[13px] pt-1">
+              <label className="flex items-center gap-2 cursor-pointer group">
                 <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[#D7E2F0] text-[#23344D] placeholder-[#8A99B0] focus:outline-none focus:ring-2 focus:ring-[#2A76C9]/30 focus:border-[#2A76C9] transition-all"
-                  placeholder="请输入密码"
-                  required
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="w-4 h-4 rounded border-[#D7E2F0] text-[#2A76C9] focus:ring-[#2A76C9] focus:ring-offset-0"
                 />
-              </div>
+                <span className="text-[#8A99B0] group-hover:text-[#23344D] transition-colors">记住登录状态</span>
+              </label>
+              <a href="#" className="text-[#2A76C9] hover:text-[#2362B0] font-medium transition-colors">
+                忘记密码？
+              </a>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#23344D] mb-1.5">
-                  验证码
-                </label>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={captchaCode}
-                    onChange={e => setCaptchaCode(e.target.value)}
-                    className="flex-1 px-4 py-2.5 rounded-lg border border-[#D7E2F0] text-[#23344D] placeholder-[#8A99B0] focus:outline-none focus:ring-2 focus:ring-[#2A76C9]/30 focus:border-[#2A76C9] transition-all"
-                    placeholder="请输入验证码"
-                    required
-                  />
-                  <div
-                    className="w-28 h-10 rounded-lg border border-[#D7E2F0] cursor-pointer flex items-center justify-center bg-[#F8FAFD] hover:bg-[#F0F4F9] transition-colors select-none"
-                    onClick={refreshCaptcha}
-                  >
-                    <span className="text-[#23344D] font-mono font-bold tracking-widest text-sm">
-                      {captchaImage}
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <button type="submit" disabled={loading} className="btn-login">
+              {loading ? '登录中...' : '登 录'}
+            </button>
+            {error && <p role="alert" className="text-center text-[13px] text-[#E54C4C]">{error}</p>}
+          </form>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#2A76C9] to-[#3D88E0] text-white font-medium hover:from-[#2362B0] hover:to-[#2A76C9] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                {loading ? '登录中...' : '登 录'}
-              </button>
-            </form>
-
-            <p className="mt-6 text-center text-xs text-[#8A99B0]">
-              默认账号: admin / hetu@2026
-            </p>
+          {/* 页脚版权 */}
+          <div className="mt-10 text-center">
+            <p className="text-[12px] text-[#8A99B0] tracking-wide">&copy; 2026 河图智弈 测试管理平台 · 版权所有</p>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }

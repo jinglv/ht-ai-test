@@ -20,8 +20,10 @@ from hetu.core.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from hetu.core.rbac import apply_data_scope_filter, get_data_scope, get_user_project_ids
 from hetu.modules.project.models import Project, ProjectMember, ProjectModule
 from hetu.modules.testcase.models import TestCase, TestExecution
+from hetu.shared.enums import DataScope
 
 
 # ===================================项目服务==================================
@@ -119,9 +121,22 @@ async def list_projects(
     page_size: int = 20,
     keyword: str | None = None,
     status: str | None = None,
+    user: dict | None = None,
 ) -> dict:
     """分页查询项目列表"""
     qs = Project.filter(is_deleted=False)
+
+    # 数据权限过滤：项目以 owner_id / 成员关系关联
+    if user:
+        scope = await get_data_scope(user)
+        if scope == DataScope.SELF:
+            qs = qs.filter(owner_id=user["user_id"])
+        elif scope == DataScope.PROJECT:
+            project_ids = await get_user_project_ids(user["user_id"])
+            if project_ids:
+                qs = qs.filter(id__in=project_ids)
+            else:
+                return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
     if keyword:
         qs = qs.filter(Q(name__icontains=keyword) | Q(code__icontains=keyword))
@@ -155,11 +170,21 @@ async def list_projects(
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
-async def get_project_overview(project_id: int) -> dict:
+async def get_project_overview(project_id: int, user: dict | None = None) -> dict:
     """项目概览统计"""
     project = await get_project_by_id(project_id)
     if not project:
         raise NotFoundError("项目不存在")
+
+    # 数据权限校验：确保用户有权限访问该项目
+    if user:
+        scope = await get_data_scope(user)
+        if scope == DataScope.SELF and project.owner_id != user["user_id"]:
+            raise NotFoundError("项目不存在")
+        elif scope == DataScope.PROJECT:
+            member_projects = await get_user_project_ids(user["user_id"])
+            if project_id not in member_projects:
+                raise NotFoundError("项目不存在")
 
     testcases = await TestCase.filter(project_id=project_id, is_deleted=False)
     total = len(testcases)
@@ -256,8 +281,21 @@ async def delete_module(module_id: int) -> None:
     logger.info(f"删除模块: {module.name}")
 
 
-async def list_modules(project_id: int) -> list[dict]:
+async def list_modules(project_id: int, user: dict | None = None) -> list[dict]:
     """获取项目模块树"""
+    # 数据权限：检查用户是否有权访问该项目
+    if user:
+        scope = await get_data_scope(user)
+        project = await get_project_by_id(project_id)
+        if not project:
+            return []
+        if scope == DataScope.SELF and project.owner_id != user["user_id"]:
+            return []
+        elif scope == DataScope.PROJECT:
+            member_projects = await get_user_project_ids(user["user_id"])
+            if project_id not in member_projects:
+                return []
+
     modules = await ProjectModule.filter(project_id=project_id).all()
     mod_map: dict[int, dict] = {}
     roots: list[dict] = []

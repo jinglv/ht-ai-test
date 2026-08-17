@@ -9,40 +9,26 @@
 包含：需求文档、测试用例、测试套件、执行记录
 """
 from fastapi import APIRouter, Depends, Query, Request
-from tortoise.expressions import Q
 
-from hetu.core.deps import current_user, pagination
-from hetu.core.exceptions import NotFoundError
+from hetu.core.exceptions import NotFoundError, ValidationError
 from hetu.core.rbac import require_permission
 from hetu.core.response import json_ok, paginated
-from hetu.modules.testcase.models import TestCase, TestExecution, TestSuite, TestSuiteCase
 from hetu.modules.testcase.schemas import (
     AIGenerateRequest,
     AIGenerateSaveRequest,
-    AIGenerateTaskResponse,
-    ExecutionStatsRequest,
-    ExecutionStatsResponse,
     RequirementDocCreateRequest,
-    RequirementDocSearchRequest,
-    RequirementDocResponse,
     SuiteCaseAddRequest,
     SuiteCaseSortRequest,
-    TestCaseBatchDeleteRequest,
-    TestCaseBatchMoveRequest,
-    TestCaseBatchPriorityRequest,
-    TestCaseBatchStatusRequest,
     TestCaseCreateRequest,
-    TestCaseResponse,
     TestCaseUpdateRequest,
     TestExecutionBatchRequest,
     TestExecutionCreateRequest,
-    TestExecutionResponse,
     TestSuiteCreateRequest,
-    TestSuiteResponse,
     TestSuiteUpdateRequest,
 )
 from hetu.modules.testcase.services import (
     add_cases_to_suite,
+    batch_create_executions,
     batch_move_testcases,
     batch_update_priority,
     batch_update_status,
@@ -52,9 +38,10 @@ from hetu.modules.testcase.services import (
     delete_requirement_doc,
     delete_suite,
     delete_testcases,
+    get_doc_by_id,
     get_execution_stats,
-    get_suite_by_id,
     get_suite_detail,
+    get_testcase_by_id,
     list_executions,
     list_requirement_docs,
     list_suites,
@@ -63,6 +50,7 @@ from hetu.modules.testcase.services import (
     sort_suite_cases,
     update_suite,
     update_testcase,
+    upload_requirement_doc,
 )
 
 testcase_router = APIRouter(prefix="/testcases", tags=["用例管理"])
@@ -100,6 +88,7 @@ async def list_testcases_api(
         page=page,
         page_size=page_size,
         ordering=order_list,
+        user=user,
     )
     return json_ok(paginated(result["items"], result["total"], result["page"], result["page_size"]))
 
@@ -232,7 +221,7 @@ async def list_suites_api(
     user: dict = Depends(require_permission("testcase:view")),
 ):
     """分页查询测试套件"""
-    result = await list_suites(project_id, page, page_size)
+    result = await list_suites(project_id, page, page_size, user=user)
     return json_ok(paginated(result["items"], result["total"], result["page"], result["page_size"]))
 
 
@@ -357,8 +346,20 @@ async def list_requirement_docs_api(
     user: dict = Depends(require_permission("testcase:view")),
 ):
     """分页查询需求文档"""
-    result = await list_requirement_docs(project_id, keyword, file_type, page, page_size)
+    result = await list_requirement_docs(project_id, keyword, file_type, page, page_size, user=user)
     return json_ok(paginated(result["items"], result["total"], result["page"], result["page_size"]))
+
+
+@requirements_router.get("/search", summary="全文检索需求文档")
+async def search_requirement_docs(
+    request: Request,
+    project_id: int = Query(description="项目 ID"),
+    keyword: str = Query(min_length=1, description="检索关键词"),
+    user: dict = Depends(require_permission("testcase:view")),
+):
+    """全文检索需求文档内容"""
+    result = await list_requirement_docs(project_id=project_id, keyword=keyword, user=user)
+    return json_ok(result["items"])
 
 
 @requirements_router.get("/{doc_id}", summary="需求文档详情")
@@ -382,18 +383,6 @@ async def get_requirement_doc_detail(
         "uploaded_by_id": doc.uploaded_by_id,
         "created_at": doc.created_at.isoformat() if doc.created_at else None,
     })
-
-
-@requirements_router.get("/search", summary="全文检索需求文档")
-async def search_requirement_docs(
-    request: Request,
-    project_id: int = Query(description="项目 ID"),
-    keyword: str = Query(min_length=1, description="检索关键词"),
-    user: dict = Depends(require_permission("testcase:view")),
-):
-    """全文检索需求文档内容"""
-    result = await list_requirement_docs(project_id=project_id, keyword=keyword)
-    return json_ok(result["items"])
 
 
 @requirements_router.delete("/{doc_id}", summary="删除需求文档")
@@ -423,7 +412,7 @@ async def list_executions_api(
     user: dict = Depends(require_permission("testcase:view")),
 ):
     """分页查询执行记录"""
-    result_data = await list_executions(project_id, testcase_id, suite_id, result, page, page_size)
+    result_data = await list_executions(project_id, testcase_id, suite_id, result, page, page_size, user=user)
     return json_ok(paginated(result_data["items"], result_data["total"], result_data["page"], result_data["page_size"]))
 
 
@@ -466,7 +455,7 @@ async def get_execution_stats_api(
     user: dict = Depends(require_permission("testcase:view")),
 ):
     """执行统计"""
-    stats = await get_execution_stats(project_id=project_id, group_by=group_by)
+    stats = await get_execution_stats(project_id=project_id, group_by=group_by, user=user)
     return json_ok(stats)
 
 

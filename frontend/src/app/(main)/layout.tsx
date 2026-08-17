@@ -1,6 +1,7 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { useEffect } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import AppLayout from '@/components/layout/AppLayout'
 
@@ -12,7 +13,12 @@ export default function RootLayoutContent({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user, loading } = useAuth()
+
+  useEffect(() => {
+    if (!loading && !user) router.replace('/login')
+  }, [loading, router, user])
 
   // 公开页面直接渲染
   if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))) {
@@ -32,7 +38,7 @@ export default function RootLayoutContent({
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFD]">
-        <div className="text-[#23344D]">请先登录</div>
+        <div className="text-[#23344D]">正在跳转登录...</div>
       </div>
     )
   }

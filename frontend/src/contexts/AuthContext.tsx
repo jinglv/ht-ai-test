@@ -10,7 +10,7 @@ interface User {
   email?: string | null
   avatar?: string | null
   is_super: boolean
-  roles: any[]
+  roles: { id: number; name: string; code: string }[]
   permissions: string[]
 }
 

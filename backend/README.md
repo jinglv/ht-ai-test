@@ -23,5 +23,5 @@ tortoise migrate
 uv run python -m hetu.core.seed
 
 # 启动服务
-uv run uvicorn hetu.main:app --reload
+uv run uvicorn main:app --reload
 ```

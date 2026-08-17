@@ -11,35 +11,31 @@ RBAC 域路由
 import random
 import string
 from datetime import timedelta
-from io import BytesIO
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, Query, Request
 
-from hetu.core.deps import current_user, pagination
+from hetu.core.deps import current_user
 from hetu.core.exceptions import (
-    AccountDisabledError,
-    BadCredentialError,
-    BusinessRuleError,
-    ConflictError,
     NotFoundError,
     ValidationError,
 )
 from hetu.core.rbac import require_permission
+from hetu.core.response import json_ok, paginated
 from hetu.core.security import (
     create_access_token,
-    decode_token,
     hash_password,
     verify_password,
 )
-from hetu.core.response import fail, json_fail, json_ok, paginated
-from hetu.modules.rbac.models import User, Role, Permission
 from hetu.modules.rbac.schemas import (
     CaptchaResponse,
     ChangePasswordRequest,
     LoginRequest,
     LoginResponse,
+    PermissionCreateRequest,
+    PermissionUpdateRequest,
     ProfileUpdateRequest,
+    RoleCreateRequest,
+    RoleUpdateRequest,
     UserCreateRequest,
     UserMeResponse,
     UserResetPasswordRequest,
@@ -49,21 +45,26 @@ from hetu.modules.rbac.schemas import (
 )
 from hetu.modules.rbac.services import (
     authenticate,
+    create_permission,
+    create_role,
     create_user,
+    delete_permission,
+    delete_role,
     delete_user,
     get_permission_tree,
+    get_role_by_id,
     get_user_by_id,
     get_user_permissions,
-    get_user_data_scopes,
+    list_permissions,
     list_roles,
     list_users,
-    list_permissions,
     reset_user_password,
     set_user_status,
+    update_permission,
+    update_role,
     update_user,
     update_user_roles,
 )
-from hetu.shared.enums import DataScope
 
 # 验证码内存存储（生产环境替换为 Redis）
 _captcha_store: dict[str, str] = {}
@@ -121,7 +122,6 @@ async def login(req: LoginRequest, request: Request):
 
     # 获取权限和角色
     permissions = await get_user_permissions(user)
-    data_scopes = await get_user_data_scopes(user)
     roles_qs = await user.roles.all()
     roles_info = [{"id": r.id, "code": r.code, "name": r.name} for r in roles_qs]
 
@@ -394,7 +394,7 @@ async def get_role_detail(
 @roles_router.post("", summary="创建角色")
 async def create_role_api(
     request: Request,
-    body: "RoleCreateRequest",
+    body: RoleCreateRequest,
     user: dict = Depends(require_permission("role:create")),
 ):
     """创建角色"""
@@ -412,7 +412,7 @@ async def create_role_api(
 async def update_role_api(
     request: Request,
     role_id: int,
-    body: "RoleUpdateRequest",
+    body: RoleUpdateRequest,
     user: dict = Depends(require_permission("role:update")),
 ):
     """更新角色"""
@@ -436,7 +436,7 @@ async def delete_role_api(
 async def bind_permissions(
     request: Request,
     role_id: int,
-    body: "RoleUpdateRequest",
+    body: RoleUpdateRequest,
     user: dict = Depends(require_permission("role:update")),
 ):
     """为角色绑定/替换权限"""
@@ -475,14 +475,11 @@ async def list_permissions_api(
 @permissions_router.post("", summary="创建权限点")
 async def create_permission_api(
     request: Request,
-    body: "PermissionCreateRequest",
+    body: PermissionCreateRequest,
     user: dict = Depends(require_permission("permission:create")),
 ):
     """创建权限点"""
-    from hetu.modules.rbac.schemas import PermissionCreateRequest
-    body_parsed = PermissionCreateRequest(**body.model_dump())
-
-    perm = await create_permission(**body_parsed.model_dump())
+    perm = await create_permission(**body.model_dump())
     return json_ok({"id": perm.id}, "创建成功")
 
 
@@ -490,14 +487,11 @@ async def create_permission_api(
 async def update_permission_api(
     request: Request,
     perm_id: int,
-    body: "PermissionUpdateRequest",
+    body: PermissionUpdateRequest,
     user: dict = Depends(require_permission("permission:update")),
 ):
     """更新权限点"""
-    from hetu.modules.rbac.schemas import PermissionUpdateRequest
-    body_parsed = PermissionUpdateRequest(**body.model_dump())
-
-    update_data = body_parsed.model_dump(exclude_none=True)
+    update_data = body.model_dump(exclude_none=True)
     perm = await update_permission(perm_id, **update_data)
     return json_ok({"id": perm.id}, "更新成功")
 

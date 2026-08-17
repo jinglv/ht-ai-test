@@ -1,16 +1,23 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { listConversations, createConversation, deleteConversation, renameConversation, getConversationMessages, aiChatStream } from '@/lib/api'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  aiChatStream,
+  deleteConversation,
+  getConversationMessages,
+  listConversations,
+  renameConversation,
+} from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
 
+type JsonRecord = Record<string, unknown>
+
 interface Message {
-  id: number
+  id: number | string
   role: 'user' | 'assistant'
   content: string
-  chart_config?: any
-  data_table?: any
-  skill_used?: string
+  chart_config?: JsonRecord
+  data_table?: JsonRecord
   token_input?: number
   token_output?: number
   latency_ms?: number
@@ -20,18 +27,154 @@ interface Message {
 interface Conversation {
   id: number
   title: string
-  last_message_at: string
-  created_at: string
+  last_message_at?: string
+  created_at?: string
 }
 
-const QUICK_PROMPTS = [
-  '统计本月各项目的用例通过率',
-  '分析测试用例覆盖率',
-  '生成P0级用例清单',
-  '查询最近7天的执行趋势',
-  '总结缺陷分布情况',
-  '对比不同模块的测试进度',
-]
+interface ChartPoint {
+  label: string
+  value: number
+}
+
+const QUICK_PROMPTS = ['通过率趋势', '缺陷分布图', '用例增长曲线', '项目健康度']
+
+function asRecord(value: unknown): JsonRecord | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonRecord)
+    : undefined
+}
+
+function formatTime(value?: string) {
+  if (!value) return ''
+  const date = new Date(value)
+  const minutes = Math.floor((Date.now() - date.getTime()) / 60000)
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}小时前`
+  if (minutes < 10080) return `${Math.floor(minutes / 1440)}天前`
+  return date.toLocaleDateString('zh-CN')
+}
+
+function getChartPoints(config?: JsonRecord): { title: string; points: ChartPoint[] } | null {
+  if (!config) return null
+  const title = typeof config.title === 'string' ? config.title : '数据分析'
+  let points: ChartPoint[] = []
+
+  if (Array.isArray(config.data)) {
+    points = config.data.flatMap(item => {
+      if (!item || typeof item !== 'object') return []
+      const row = item as JsonRecord
+      const label = row.name ?? row.label ?? row.category
+      const value = Number(row.value ?? row.count)
+      return typeof label === 'string' && Number.isFinite(value) ? [{ label, value }] : []
+    })
+  } else {
+    const labels = Array.isArray(config.labels)
+      ? config.labels
+      : Array.isArray(config.categories)
+        ? config.categories
+        : []
+    const datasets = Array.isArray(config.datasets)
+      ? config.datasets
+      : Array.isArray(config.series)
+        ? config.series
+        : []
+    const firstDataset = datasets[0]
+    const values =
+      firstDataset && typeof firstDataset === 'object' && Array.isArray((firstDataset as JsonRecord).data)
+        ? ((firstDataset as JsonRecord).data as unknown[])
+        : []
+    points = labels.flatMap((label, index) => {
+      const value = Number(values[index])
+      return typeof label === 'string' && Number.isFinite(value) ? [{ label, value }] : []
+    })
+  }
+
+  return points.length ? { title, points } : null
+}
+
+function ChartView({ config }: { config?: JsonRecord }) {
+  const chart = getChartPoints(config)
+  if (!chart) return null
+  const max = Math.max(...chart.points.map(point => Math.max(point.value, 0)), 1)
+
+  return (
+    <div style={{ marginTop: 12, border: '1px solid #E8EDF5', borderRadius: 8, padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <span style={{ width: 3, height: 16, borderRadius: 2, background: 'var(--jin)' }} />
+        <strong style={{ fontSize: 13 }}>{chart.title}</strong>
+      </div>
+      <div style={{ height: 160, display: 'flex', alignItems: 'stretch', gap: 12, overflowX: 'auto' }}>
+        {chart.points.map((point, index) => (
+          <div
+            key={`${point.label}-${index}`}
+            style={{ minWidth: 48, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+          >
+            <span style={{ fontSize: 11, color: 'var(--primary-blue)', fontWeight: 600 }}>
+              {point.value}
+            </span>
+            <div style={{ flex: 1, width: '70%', display: 'flex', alignItems: 'flex-end', margin: '6px 0' }}>
+              <span
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  height: `${Math.max(4, (Math.max(point.value, 0) / max) * 100)}%`,
+                  borderRadius: '5px 5px 2px 2px',
+                  background:
+                    index === 1
+                      ? 'linear-gradient(180deg, #D4B86A, #E8C87A)'
+                      : 'linear-gradient(180deg, #2A76C9, #5A96E5)',
+                }}
+              />
+            </div>
+            <span style={{ fontSize: 11, color: 'var(--text-gray)', whiteSpace: 'nowrap' }}>
+              {point.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TableView({ table }: { table?: JsonRecord }) {
+  if (!table) return null
+  const rowsValue = Array.isArray(table.rows) ? table.rows : Array.isArray(table.data) ? table.data : []
+  const rows = rowsValue.filter(
+    (row): row is JsonRecord => Boolean(row) && typeof row === 'object' && !Array.isArray(row)
+  )
+  if (!rows.length) return null
+
+  const configuredColumns = Array.isArray(table.columns) ? table.columns : []
+  const columns = configuredColumns.length
+    ? configuredColumns.flatMap(column => {
+        if (typeof column === 'string') return [{ key: column, label: column }]
+        if (!column || typeof column !== 'object') return []
+        const value = column as JsonRecord
+        const key = value.key ?? value.dataIndex ?? value.field
+        const label = value.title ?? value.label ?? key
+        return typeof key === 'string' && typeof label === 'string' ? [{ key, label }] : []
+      })
+    : Object.keys(rows[0]).map(key => ({ key, label: key }))
+
+  if (!columns.length) return null
+  return (
+    <div style={{ marginTop: 12, maxWidth: '100%', overflowX: 'auto', borderRadius: 8 }}>
+      <table className="data-table">
+        <thead>
+          <tr>{columns.map(column => <th key={column.key}>{column.label}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {columns.map(column => <td key={column.key}>{String(row[column.key] ?? '—')}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 export default function AiChatPage() {
   const { user } = useAuth()
@@ -41,404 +184,415 @@ export default function AiChatPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null)
+  const messageSequenceRef = useRef(0)
 
-  // Load conversations list
-  useEffect(() => {
-    loadConversations()
+  const loadConversations = useCallback(async () => {
+    try {
+      const response = await listConversations({ page: 1, page_size: 50 })
+      setConversations(response.data.items)
+    } catch {
+      setError('会话列表加载失败，请稍后重试。')
+    }
   }, [])
 
-  // Load messages when conversation changes
   useEffect(() => {
-    if (activeConvId) {
-      loadMessages(activeConvId)
-    } else {
-      setMessages([])
+    let active = true
+    listConversations({ page: 1, page_size: 50 })
+      .then(response => {
+        if (active) setConversations(response.data.items)
+      })
+      .catch(() => {
+        if (active) setError('会话列表加载失败，请稍后重试。')
+      })
+    return () => {
+      active = false
     }
-  }, [activeConvId])
+  }, [])
 
-  // Auto-scroll to bottom
+  useEffect(() => {
+    if (!activeConvId) return
+    if (sending) return
+
+    let active = true
+    getConversationMessages(activeConvId, { limit: 100 })
+      .then(response => {
+        if (active) {
+          setMessages(response.data.map(message => ({
+            ...message,
+            chart_config: asRecord(message.chart_config),
+            data_table: asRecord(message.data_table),
+          })))
+        }
+      })
+      .catch(() => {
+        if (active) setError('消息记录加载失败，请稍后重试。')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [activeConvId, sending])
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const loadConversations = async () => {
-    try {
-      const res = await listConversations({ page: 1, page_size: 50 })
-      setConversations(res.data.items)
-    } catch (err) {
-      console.error('加载会话失败', err)
-    }
-  }
+  useEffect(() => () => {
+    void readerRef.current?.cancel()
+  }, [])
 
-  const loadMessages = async (convId: number) => {
-    setLoading(true)
-    try {
-      const data = await getConversationMessages(convId, { limit: 100 })
-      setMessages(data.data)
-    } catch (err) {
-      console.error('加载消息失败', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleNewConversation = async () => {
-    try {
-      const res = await createConversation('新对话')
-      const newConv = res.data
-      setConversations(prev => [newConv, ...prev])
-      setActiveConvId(newConv.id)
-    } catch (err) {
-      console.error('创建会话失败', err)
-    }
-  }
-
-  const handleDeleteConversation = async (convId: number) => {
-    if (!confirm('确定删除该会话？')) return
-    try {
-      await deleteConversation(convId)
-      setConversations(prev => prev.filter(c => c.id !== convId))
-      if (activeConvId === convId) {
-        setActiveConvId(null)
-        setMessages([])
-      }
-    } catch (err) {
-      console.error('删除会话失败', err)
-    }
-  }
-
-  const handleRenameConversation = async (convId: number, currentTitle: string) => {
-    const newTitle = prompt('新会话名称', currentTitle)
-    if (!newTitle || newTitle === currentTitle) return
-    try {
-      await renameConversation(convId, newTitle)
-      setConversations(prev => prev.map(c => c.id === convId ? { ...c, title: newTitle } : c))
-    } catch (err) {
-      console.error('重命名失败', err)
-    }
-  }
-
-  const handleSend = async () => {
-    if (!input.trim() || sending) return
-
-    const message = input.trim()
+  const handleNewConversation = () => {
+    if (sending) void readerRef.current?.cancel()
+    setActiveConvId(null)
+    setMessages([])
     setInput('')
-    setSending(true)
+    setError('')
+  }
 
-    // Add user message to UI immediately
-    const userMsg: Message = {
-      id: Date.now(),
+  const selectConversation = (conversationId: number) => {
+    if (conversationId === activeConvId) return
+    setLoading(true)
+    setActiveConvId(conversationId)
+  }
+
+  const handleDeleteConversation = async (conversationId: number) => {
+    if (!window.confirm('确定删除该会话？')) return
+    try {
+      await deleteConversation(conversationId)
+      setConversations(current => current.filter(item => item.id !== conversationId))
+      if (activeConvId === conversationId) handleNewConversation()
+    } catch {
+      setError('删除会话失败，请稍后重试。')
+    }
+  }
+
+  const handleRenameConversation = async (conversation: Conversation) => {
+    const title = window.prompt('新会话名称', conversation.title || '新对话')?.trim()
+    if (!title || title === conversation.title) return
+    try {
+      await renameConversation(conversation.id, title)
+      setConversations(current =>
+        current.map(item => (item.id === conversation.id ? { ...item, title } : item))
+      )
+    } catch {
+      setError('重命名失败，请稍后重试。')
+    }
+  }
+
+  const updateAssistant = (messageId: string, patch: Partial<Message>) => {
+    setMessages(current =>
+      current.map(message => (message.id === messageId ? { ...message, ...patch } : message))
+    )
+  }
+
+  const appendAssistantText = (messageId: string, content: string) => {
+    setMessages(current =>
+      current.map(message =>
+        message.id === messageId ? { ...message, content: message.content + content } : message
+      )
+    )
+  }
+
+  const handleSend = async (prompt?: string) => {
+    const content = (prompt ?? input).trim()
+    if (!content || sending) return
+    const sequence = ++messageSequenceRef.current
+
+    const userMessage: Message = {
+      id: `user-${sequence}`,
       role: 'user',
-      content: message,
+      content,
       created_at: new Date().toISOString(),
     }
-    setMessages(prev => [...prev, userMsg])
-
-    // Create placeholder for AI response
-    const aiMsgId = Date.now() + 1
-    const aiMsg: Message = {
-      id: aiMsgId,
+    const assistantId = `assistant-${sequence}`
+    const assistantMessage: Message = {
+      id: assistantId,
       role: 'assistant',
       content: '',
       created_at: new Date().toISOString(),
     }
-    setMessages(prev => [...prev, aiMsg])
 
-    abortControllerRef.current = new AbortController()
+    setInput('')
+    setError('')
+    setSending(true)
+    setMessages(current => [...current, userMessage, assistantMessage])
 
     try {
-      const projectId = 1 // Default project; in real app, get from context
       const response = await aiChatStream({
-        message,
+        message: content,
         conversation_id: activeConvId || undefined,
-        project_id: projectId,
       })
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response body')
+      if (!reader) throw new Error('响应流不可用')
+      readerRef.current = reader
 
       const decoder = new TextDecoder()
       let buffer = ''
       let conversationId = activeConvId
 
+      const processEvent = (block: string) => {
+        const lines = block.split(/\r?\n/)
+        const event = lines.find(line => line.startsWith('event:'))?.slice(6).trim() || 'message'
+        const rawData = lines
+          .filter(line => line.startsWith('data:'))
+          .map(line => line.slice(5).trimStart())
+          .join('\n')
+        if (!rawData) return
+        const data = JSON.parse(rawData) as JsonRecord
+
+        if (event === 'conversation') {
+          const newId = Number(data.conversation_id)
+          if (Number.isFinite(newId) && !conversationId) {
+            conversationId = newId
+            setActiveConvId(newId)
+          }
+        } else if (event === 'delta' && typeof data.content === 'string') {
+          appendAssistantText(assistantId, data.content)
+        } else if (event === 'table') {
+          updateAssistant(assistantId, {
+            data_table:
+              data.data_table && typeof data.data_table === 'object'
+                ? (data.data_table as JsonRecord)
+                : data,
+          })
+        } else if (event === 'chart') {
+          updateAssistant(assistantId, {
+            chart_config:
+              data.chart_config && typeof data.chart_config === 'object'
+                ? (data.chart_config as JsonRecord)
+                : data,
+          })
+        } else if (event === 'done') {
+          updateAssistant(assistantId, {
+            token_input: Number(data.token_input) || undefined,
+            token_output: Number(data.token_output) || undefined,
+            latency_ms: Number(data.latency_ms) || undefined,
+          })
+        } else if (event === 'error') {
+          throw new Error(typeof data.message === 'string' ? data.message : 'AI 分析失败')
+        }
+      }
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (line.startsWith('event:')) {
-            const eventType = line.slice(6).trim()
-            continue
-          }
-          if (line.startsWith('data:')) {
-            const dataStr = line.slice(5).trim()
-            if (!dataStr) continue
-
-            try {
-              const eventData = JSON.parse(dataStr)
-
-              // Handle conversation event
-              if (eventData.conversation_id && !conversationId) {
-                conversationId = eventData.conversation_id
-                setActiveConvId(eventData.conversation_id)
-                // Add to conversations list
-                setConversations(prev => [{
-                  id: eventData.conversation_id,
-                  title: eventData.title || message.slice(0, 30),
-                  last_message_at: new Date().toISOString(),
-                  created_at: new Date().toISOString(),
-                }, ...prev])
-              }
-
-              // Handle delta (text streaming)
-              if (eventData.content) {
-                setMessages(prev => prev.map(msg =>
-                  msg.id === aiMsgId
-                    ? { ...msg, content: msg.content + eventData.content }
-                    : msg
-                ))
-              }
-
-              // Handle done event
-              if (eventData.conversation_id) {
-                // Update token info if available
-                setMessages(prev => prev.map(msg =>
-                  msg.id === aiMsgId
-                    ? {
-                        ...msg,
-                        token_input: eventData.token_input,
-                        token_output: eventData.token_output,
-                        latency_ms: eventData.latency_ms,
-                      }
-                    : msg
-                ))
-              }
-            } catch {
-              // Ignore parse errors for incomplete SSE chunks
-            }
-          }
-        }
+        const blocks = buffer.split(/\r?\n\r?\n/)
+        buffer = blocks.pop() || ''
+        blocks.forEach(processEvent)
       }
-    } catch (err) {
-      console.error('发送消息失败', err)
-      setMessages(prev => prev.map(msg =>
-        msg.id === aiMsgId
-          ? { ...msg, content: msg.content + '\n\n[发送失败，请重试]' }
-          : msg
-      ))
+      if (buffer.trim()) processEvent(buffer)
+    } catch (streamError) {
+      const message = streamError instanceof Error ? streamError.message : '发送失败'
+      appendAssistantText(assistantId, `\n\n[${message}]`)
     } finally {
+      readerRef.current = null
       setSending(false)
-      abortControllerRef.current = null
-      // Reload conversations to update titles
-      loadConversations()
+      await loadConversations()
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
-
-  const handleQuickPrompt = (prompt: string) => {
-    setInput(prompt)
-  }
-
-  const formatTime = (ts: string) => {
-    const d = new Date(ts)
-    const now = new Date()
-    const diffMs = now.getTime() - d.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    if (diffMins < 1) return '刚刚'
-    if (diffMins < 60) return `${diffMins}分钟前`
-    const diffHours = Math.floor(diffMins / 60)
-    if (diffHours < 24) return `${diffHours}小时前`
-    const diffDays = Math.floor(diffHours / 24)
-    if (diffDays < 7) return `${diffDays}天前`
-    return d.toLocaleDateString('zh-CN')
+  const handleStop = async () => {
+    await readerRef.current?.cancel()
+    readerRef.current = null
+    setSending(false)
   }
 
   return (
-    <div className="flex h-[calc(100vh-140px)] gap-4">
-      {/* ========== 左：会话列表 ========== */}
-      <div className="w-72 bg-white rounded-xl border border-[#D7E2F0] shadow-sm flex flex-col">
-        <div className="p-4 border-b border-[#D7E2F0]">
-          <button
-            onClick={handleNewConversation}
-            className="w-full px-4 py-2 bg-[#2A76C9] text-white text-sm rounded-lg hover:bg-[#1E5FA0] transition-colors shadow-sm"
-          >
-            + 新建对话
+    <div className="page-wrap" style={{ flexDirection: 'row', gap: 0, padding: 0, overflow: 'hidden' }}>
+      <aside
+        className="tree-card"
+        style={{ width: 260, margin: 20, marginRight: 0, display: 'flex', flexDirection: 'column' }}
+      >
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid #E8EDF5' }}>
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleNewConversation}>
+            <span className="material-symbols-outlined">add</span>
+            新建对话
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
-            <div className="p-4 text-center text-sm text-[#8A99B0]">暂无会话</div>
-          ) : (
-            <div className="p-2 space-y-1">
-              {conversations.map(conv => (
-                <div
-                  key={conv.id}
-                  className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${
-                    activeConvId === conv.id
-                      ? 'bg-[#2A76C9]/10 text-[#2A76C9]'
-                      : 'text-[#23344D] hover:bg-[#F0F4FA]'
-                  }`}
-                  onClick={() => setActiveConvId(conv.id)}
-                >
-                  <span className="flex-1 truncate">{conv.title || '新对话'}</span>
-                  <div className="hidden group-hover:flex items-center gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleRenameConversation(conv.id, conv.title) }}
-                      className="text-xs text-[#8A99B0] hover:text-[#2A76C9]"
-                    >
-                      重命名
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteConversation(conv.id) }}
-                      className="text-xs text-[#8A99B0] hover:text-red-500"
-                    >
-                      删除
-                    </button>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {conversations.length ? conversations.map(conversation => (
+            <div
+              key={conversation.id}
+              className={`conv-item ${activeConvId === conversation.id ? 'active' : ''}`}
+              onClick={() => selectConversation(conversation.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') selectConversation(conversation.id)
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 500, color: 'var(--dark-qing)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {conversation.title || '新对话'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-gray)', marginTop: 4 }}>
+                    {formatTime(conversation.last_message_at || conversation.created_at)}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ========== 右：对话区 ========== */}
-      <div className="flex-1 bg-white rounded-xl border border-[#D7E2F0] shadow-sm flex flex-col">
-        {!activeConvId ? (
-          /* 欢迎页 */
-          <div className="flex-1 flex flex-col items-center justify-center p-8">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#2A76C9] to-[#3D88E0] flex items-center justify-center text-white text-3xl shadow-lg mb-6">
-              🤖
-            </div>
-            <h2 className="text-xl font-bold text-[#23344D] mb-2">AI 智能测试分析</h2>
-            <p className="text-[#8A99B0] text-sm mb-8 text-center max-w-md">
-              基于自然语言的测试数据分析助手，可查询用例状态、分析执行趋势、生成测试报告
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full max-w-2xl">
-              {QUICK_PROMPTS.map((prompt, idx) => (
                 <button
-                  key={idx}
-                  onClick={() => handleQuickPrompt(prompt)}
-                  className="text-left px-4 py-3 bg-[#F8FAFD] border border-[#D7E2F0] rounded-lg text-sm text-[#23344D] hover:border-[#2A76C9] hover:bg-[#2A76C9]/5 transition-colors"
+                  title="重命名"
+                  aria-label={`重命名 ${conversation.title}`}
+                  onClick={event => {
+                    event.stopPropagation()
+                    void handleRenameConversation(conversation)
+                  }}
+                  style={{ cursor: 'pointer', color: 'var(--text-gray)', padding: 3 }}
                 >
-                  {prompt}
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
                 </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* 消息列表 */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {loading ? (
-                <div className="text-center py-12 text-[#8A99B0]">加载中...</div>
-              ) : messages.length === 0 ? (
-                <div className="text-center py-12 text-[#8A99B0]">
-                  <p className="mb-4">开始新的对话吧</p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {QUICK_PROMPTS.map((prompt, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleQuickPrompt(prompt)}
-                        className="px-3 py-1.5 bg-[#F8FAFD] border border-[#D7E2F0] rounded-full text-xs text-[#23344D] hover:border-[#2A76C9] transition-colors"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                messages.map(msg => (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {msg.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2A76C9] to-[#3D88E0] flex items-center justify-center text-white text-sm flex-shrink-0">
-                        AI
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[70%] rounded-xl px-4 py-3 ${
-                        msg.role === 'user'
-                          ? 'bg-[#2A76C9] text-white'
-                          : 'bg-[#F8FAFD] border border-[#D7E2F0] text-[#23344D]'
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      {msg.role === 'assistant' && (msg.token_input || msg.token_output) && (
-                        <div className="mt-2 pt-2 border-t border-[#D7E2F0]/50 text-xs text-[#8A99B0] flex gap-3">
-                          {msg.token_input && <span>输入: {msg.token_input} tokens</span>}
-                          {msg.token_output && <span>输出: {msg.token_output} tokens</span>}
-                          {msg.latency_ms && <span>耗时: {msg.latency_ms}ms</span>}
-                        </div>
-                      )}
-                    </div>
-                    {msg.role === 'user' && (
-                      <div className="w-8 h-8 rounded-full bg-[#23344D] flex items-center justify-center text-white text-sm flex-shrink-0">
-                        {user?.real_name?.[0] || 'U'}
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-              {sending && (
-                <div className="flex gap-3 justify-start">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2A76C9] to-[#3D88E0] flex items-center justify-center text-white text-sm flex-shrink-0">
-                    AI
-                  </div>
-                  <div className="bg-[#F8FAFD] border border-[#D7E2F0] rounded-xl px-4 py-3">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-[#2A76C9] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-[#2A76C9] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-[#2A76C9] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* 输入区 */}
-            <div className="p-4 border-t border-[#D7E2F0]">
-              <div className="flex gap-3">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="输入问题，例如：统计本月各项目的用例通过率..."
-                  className="flex-1 text-sm border border-[#D7E2F0] rounded-lg px-4 py-2.5 resize-none focus:outline-none focus:border-[#2A76C9] h-12"
-                  disabled={sending}
-                />
                 <button
-                  onClick={handleSend}
-                  disabled={sending || !input.trim()}
-                  className="px-6 py-2 bg-[#2A76C9] text-white text-sm rounded-lg hover:bg-[#1E5FA0] transition-colors disabled:opacity-50 shadow-sm"
+                  title="删除"
+                  aria-label={`删除 ${conversation.title}`}
+                  onClick={event => {
+                    event.stopPropagation()
+                    void handleDeleteConversation(conversation.id)
+                  }}
+                  style={{ cursor: 'pointer', color: 'var(--text-gray)', padding: 3 }}
                 >
-                  发送
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
                 </button>
               </div>
-              <p className="text-xs text-[#8A99B0] mt-2">Enter 发送，Shift+Enter 换行</p>
             </div>
-          </>
-        )}
-      </div>
+          )) : (
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-gray)' }}>暂无历史会话</div>
+          )}
+        </div>
+      </aside>
+
+      <section style={{ minWidth: 0, flex: 1, margin: '20px 20px 20px 0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-gray)' }}>正在加载消息…</div>
+          ) : messages.length === 0 ? (
+            <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div className="ai-avatar" style={{ width: 64, height: 64, marginBottom: 20 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 32 }}>psychology</span>
+              </div>
+              <h2 className="font-brand" style={{ fontSize: 22, marginBottom: 8 }}>AI 智能测试分析</h2>
+              <p style={{ maxWidth: 480, color: 'var(--text-gray)', lineHeight: 1.7 }}>
+                用自然语言查询测试数据、分析执行趋势与项目健康度。
+              </p>
+            </div>
+          ) : messages.map(message => (
+            <div
+              key={message.id}
+              style={{ display: 'flex', justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start', gap: 10, marginBottom: 24 }}
+            >
+              {message.role === 'assistant' && (
+                <div className="ai-avatar"><span className="material-symbols-outlined" style={{ fontSize: 17 }}>psychology</span></div>
+              )}
+              <div style={{ maxWidth: '82%', minWidth: 0 }}>
+                <div
+                  style={{
+                    padding: '11px 15px',
+                    borderRadius: 12,
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: 1.7,
+                    ...(message.role === 'user'
+                      ? { color: '#FFF', background: 'linear-gradient(135deg, #2A76C9, #3D88E0)', borderBottomRightRadius: 3 }
+                      : { color: 'var(--dark-qing)' }),
+                  }}
+                >
+                  {message.content || (sending && message.role === 'assistant' ? (
+                    <span style={{ display: 'flex', gap: 6, padding: '5px 0' }}>
+                      <span className="typing-dot" />
+                      <span className="typing-dot" />
+                      <span className="typing-dot" />
+                    </span>
+                  ) : '')}
+                </div>
+                {message.role === 'assistant' && <ChartView config={message.chart_config} />}
+                {message.role === 'assistant' && <TableView table={message.data_table} />}
+                {message.role === 'assistant' && (message.token_input || message.token_output || message.latency_ms) ? (
+                  <div style={{ marginTop: 7, fontSize: 11, color: 'var(--text-gray)', display: 'flex', gap: 12 }}>
+                    {message.token_input ? <span>输入 {message.token_input} tokens</span> : null}
+                    {message.token_output ? <span>输出 {message.token_output} tokens</span> : null}
+                    {message.latency_ms ? <span>耗时 {message.latency_ms}ms</span> : null}
+                  </div>
+                ) : null}
+              </div>
+              {message.role === 'user' && (
+                <div className="ai-avatar" style={{ background: 'var(--dark-qing)', color: '#FFF' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{user?.real_name?.[0] || '我'}</span>
+                </div>
+              )}
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div style={{ padding: 20, borderTop: '1px solid #E8EDF5', background: '#FFF' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            {QUICK_PROMPTS.map(prompt => (
+              <button
+                key={prompt}
+                onClick={() => void handleSend(prompt)}
+                disabled={sending}
+                style={{ padding: '6px 12px', border: '1px solid #E8EDF5', borderRadius: 8, color: 'var(--dark-qing)', cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.5 : 1 }}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+          {error && <div role="alert" style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 8 }}>{error}</div>}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, border: '1px solid var(--light-qing)', borderRadius: 24, padding: '6px 6px 6px 16px' }}>
+            <textarea
+              value={input}
+              onChange={event => setInput(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault()
+                  void handleSend()
+                }
+              }}
+              disabled={sending}
+              rows={1}
+              placeholder="输入你的问题…"
+              aria-label="对话内容"
+              style={{ flex: 1, minHeight: 36, maxHeight: 120, resize: 'vertical', border: 0, outline: 0, font: 'inherit', padding: '8px 0', color: 'var(--dark-qing)' }}
+            />
+            <button
+              disabled
+              title="后端暂不支持附件上传"
+              aria-label="附件上传暂不可用"
+              style={{ padding: 8, color: 'var(--text-gray)', cursor: 'not-allowed', opacity: 0.5 }}
+            >
+              <span className="material-symbols-outlined">attachment</span>
+            </button>
+            {sending ? (
+              <button
+                onClick={() => void handleStop()}
+                title="停止生成"
+                aria-label="停止生成"
+                style={{ width: 40, height: 40, borderRadius: '50%', display: 'grid', placeItems: 'center', color: '#FFF', background: 'var(--danger)', cursor: 'pointer' }}
+              >
+                <span className="material-symbols-outlined">stop</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => void handleSend()}
+                disabled={!input.trim()}
+                title="发送"
+                aria-label="发送消息"
+                style={{ width: 40, height: 40, borderRadius: '50%', display: 'grid', placeItems: 'center', color: '#FFF', background: 'linear-gradient(135deg, #2A76C9, #3D88E0)', cursor: input.trim() ? 'pointer' : 'not-allowed', opacity: input.trim() ? 1 : 0.45 }}
+              >
+                <span className="material-symbols-outlined">send</span>
+              </button>
+            )}
+          </div>
+          <div style={{ marginTop: 7, paddingLeft: 8, fontSize: 11, color: 'var(--text-gray)' }}>
+            Enter 发送，Shift + Enter 换行
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

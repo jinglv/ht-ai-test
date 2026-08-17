@@ -1,209 +1,198 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { listUsers, createUser, updateUser, deleteUser, updateUserStatus } from '@/lib/api'
+import { useCallback, useEffect, useState } from 'react'
+import * as api from '@/lib/api'
+import TabBar from '@/components/layout/TabBar'
 
-interface User {
+type Role = { id: number; name: string; code: string }
+type User = {
   id: number
   username: string
   real_name: string
-  email?: string
-  phone?: string
+  email?: string | null
+  phone?: string | null
   is_active: boolean
-  is_super: boolean
-  roles: any[]
-  created_at: string
+  roles?: Role[]
+  created_at?: string | null
 }
 
-export default function UsersPage() {
-  const [items, setItems] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  const [keyword, setKeyword] = useState('')
-  const [showForm, setShowForm] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    real_name: '',
-    email: '',
-    phone: '',
-    is_active: true,
-    is_super: false,
-    role_ids: [] as number[],
-  })
+type UserApi = typeof api & {
+  resetUserPassword: (id: number, password: string) => Promise<unknown>
+}
 
-  const loadUsers = async () => {
+const userApi = api as UserApi
+const emptyForm = { username: '', password: '', real_name: '', email: '', phone: '', is_active: true, role_ids: [] as number[] }
+const inputStyle = { width: '100%', padding: '10px 14px', border: '1px solid #D7E2F0', borderRadius: 8, color: '#23344D' }
+
+export default function UsersPage() {
+  const [activeTab, setActiveTab] = useState('用户列表')
+  const [users, setUsers] = useState<User[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('')
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [modal, setModal] = useState<'edit' | 'roles' | 'password' | null>(null)
+  const [current, setCurrent] = useState<User | null>(null)
+  const [form, setForm] = useState(emptyForm)
+  const [newPassword, setNewPassword] = useState('')
+  const pageSize = 10
+
+  const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await listUsers({ page: 1, page_size: 50, keyword: keyword || undefined })
-      setItems(res.data.items)
-    } catch {
-      // ignore
+      const res = await api.listUsers({ page, page_size: pageSize, keyword: search || undefined })
+      const items = (res.data.items as User[]).filter((user) => status === '' || String(user.is_active) === status)
+      setUsers(items)
+      setTotal(res.data.total)
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, search, status])
 
+  useEffect(() => { void Promise.resolve().then(loadUsers) }, [loadUsers])
   useEffect(() => {
-    loadUsers()
+    void api.listRoles({ page_size: 100 }).then((res) => setRoles(res.data.items as Role[]))
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      if (editingUser) {
-        await updateUser(editingUser.id, formData)
-      } else {
-        await createUser(formData)
-      }
-      setShowForm(false)
-      setEditingUser(null)
-      setFormData({ username: '', password: '', real_name: '', email: '', phone: '', is_active: true, is_super: false, role_ids: [] })
-      loadUsers()
-    } catch {
-      alert(editingUser ? '更新用户失败' : '创建用户失败')
-    }
-  }
-
-  const handleEdit = (user: User) => {
-    setEditingUser(user)
-    const roleIds = user.roles?.map((r: any) => r.id) || []
-    setFormData({
+  const openEdit = (user?: User) => {
+    setCurrent(user || null)
+    setForm(user ? {
       username: user.username,
       password: '',
       real_name: user.real_name,
       email: user.email || '',
       phone: user.phone || '',
       is_active: user.is_active,
-      is_super: user.is_super,
-      role_ids: roleIds,
-    })
-    setShowForm(true)
+      role_ids: user.roles?.map((role) => role.id) || [],
+    } : emptyForm)
+    setModal('edit')
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定删除该用户?')) return
-    try {
-      await deleteUser(id)
-      loadUsers()
-    } catch {
-      alert('删除失败')
+  const saveUser = async () => {
+    if (!form.username || !form.real_name || (!current && form.password.length < 6)) return alert('请完整填写必填项，初始密码至少 6 位')
+    if (current) {
+      await api.updateUser(current.id, {
+        real_name: form.real_name, email: form.email || null, phone: form.phone || null, is_active: form.is_active,
+      })
+      await api.updateUserRoles(current.id, form.role_ids)
+    } else {
+      await api.createUser(form)
     }
+    setModal(null)
+    await loadUsers()
   }
 
-  const toggleStatus = async (id: number, is_active: boolean) => {
-    try {
-      await updateUserStatus(id, !is_active)
-      loadUsers()
-    } catch {
-      alert('操作失败')
-    }
+  const toggleStatus = async (user: User) => {
+    await api.updateUserStatus(user.id, !user.is_active)
+    await loadUsers()
   }
+
+  const deleteUser = async (user: User) => {
+    if (!confirm(`确定删除用户“${user.real_name}”？`)) return
+    await api.deleteUser(user.id)
+    await loadUsers()
+  }
+
+  const openRoles = (user: User) => {
+    setCurrent(user)
+    setForm({ ...emptyForm, role_ids: user.roles?.map((role) => role.id) || [] })
+    setModal('roles')
+  }
+
+  const saveRoles = async () => {
+    if (!current) return
+    await api.updateUserRoles(current.id, form.role_ids)
+    setModal(null)
+    await loadUsers()
+  }
+
+  const resetPassword = async () => {
+    if (!current || newPassword.length < 6) return alert('新密码至少 6 位')
+    await userApi.resetUserPassword(current.id, newPassword)
+    setModal(null)
+    setNewPassword('')
+  }
+
+  const pages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#23344D]">用户管理</h1>
-        <button
-          onClick={() => { setEditingUser(null); setFormData({ username: '', password: '', real_name: '', email: '', phone: '', is_active: true, is_super: false, role_ids: [] }); setShowForm(true) }}
-          className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#2A76C9] to-[#3D88E0] text-white text-sm font-medium hover:from-[#2362B0] hover:to-[#2A76C9] transition-all shadow-md"
-        >
-          新建用户
-        </button>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      <TabBar
+        tabs={['用户列表', '角色分配', '账号设置'].map(label => ({ key: label, label }))}
+        activeKey={activeTab}
+        onTabChange={setActiveTab}
+      />
+      <div className="page-wrap" style={{ minHeight: 0 }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <div className="card-head">
+            <div className="card-title"><div className="card-title-bar" />用户列表</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div className="search-box"><span className="material-symbols-outlined">search</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索用户名/姓名" /></div>
+              <select className="btn btn-outline" value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option value="">所有状态</option><option value="true">启用</option><option value="false">禁用</option>
+              </select>
+              <button className="btn btn-primary" onClick={() => openEdit()}><span className="material-symbols-outlined">add</span>新增用户</button>
+            </div>
+          </div>
+          <div style={{ overflow: 'auto', flex: 1 }}>
+            <table className="data-table">
+              <thead><tr><th>用户名</th><th>姓名</th><th>邮箱</th><th>所属角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.username}</td><td>{user.real_name || '—'}</td><td>{user.email || '—'}</td>
+                    <td style={{ textAlign: 'center' }}>{user.roles?.length ? user.roles.map((role) => <span className="tag info" key={role.id}>{role.name}</span>) : '—'}</td>
+                    <td style={{ textAlign: 'center' }}><button className={`tag ${user.is_active ? 'success' : 'plain'}`} onClick={() => void toggleStatus(user)}>{user.is_active ? '启用' : '禁用'}</button></td>
+                    <td>{user.created_at ? new Date(user.created_at).toLocaleString('zh-CN') : '—'}</td>
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <button className="op-link" onClick={() => openEdit(user)}>编辑</button>
+                      <button className="op-link" onClick={() => openRoles(user)}>分配角色</button>
+                      <button className="op-link" onClick={() => { setCurrent(user); setModal('password') }}>重置密码</button>
+                      <button className="op-link danger" onClick={() => void deleteUser(user)}>删除</button>
+                    </td>
+                  </tr>
+                ))}
+                {!loading && users.length === 0 && <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#8A99B0' }}>暂无用户数据</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <div className="pagination-wrapper">
+            <span className="page-info">共 {total} 条记录，第 {page} / {pages} 页</span>
+            <div className="pagination">
+              <button className="page-btn" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>‹</button>
+              <button className="page-btn active">{page}</button>
+              <button className="page-btn" disabled={page === pages} onClick={() => setPage((value) => value + 1)}>›</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 搜索 */}
-      <div className="bg-white rounded-xl border border-[#D7E2F0] p-4 shadow-sm">
-        <input
-          type="text"
-          value={keyword}
-          onChange={e => setKeyword(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && loadUsers()}
-          className="w-full px-4 py-2 rounded-lg border border-[#D7E2F0] focus:outline-none focus:ring-2 focus:ring-[#2A76C9]/30 focus:border-[#2A76C9]"
-          placeholder="搜索用户名/姓名..."
-        />
-      </div>
-
-      {/* 用户列表 */}
-      <div className="bg-white rounded-xl border border-[#D7E2F0] shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gradient-to-r from-[#0E2A3E] via-[#1A4966] to-[#235A7D]">
-              <th className="px-4 py-3 text-left text-sm font-medium text-white">用户名</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-white">姓名</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-white">邮箱</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-white">状态</th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-white">操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#D7E2F0]">
-            {items.map(user => (
-              <tr key={user.id} className="hover:bg-[#F8FAFD] transition-colors">
-                <td className="px-4 py-3 text-sm text-[#23344D] font-medium">{user.username}</td>
-                <td className="px-4 py-3 text-sm text-[#23344D]">{user.real_name}</td>
-                <td className="px-4 py-3 text-sm text-[#8A99B0]">{user.email || '-'}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {user.is_active ? '启用' : '禁用'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => handleEdit(user)} className="text-[#2A76C9] text-sm hover:underline mr-3">编辑</button>
-                  <button onClick={() => toggleStatus(user.id, user.is_active)} className="text-[#FF8C38] text-sm hover:underline mr-3">
-                    {user.is_active ? '禁用' : '启用'}
-                  </button>
-                  <button onClick={() => handleDelete(user.id)} className="text-[#E54C4C] text-sm hover:underline">删除</button>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && !loading && (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-[#8A99B0] text-sm">暂无用户</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 新建/编辑弹窗 */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl border border-[#D7E2F0] p-6 w-full max-w-lg shadow-xl">
-            <h3 className="text-lg font-bold text-[#23344D] mb-4">{editingUser ? '编辑用户' : '新建用户'}</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#23344D] mb-1">用户名 *</label>
-                  <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-[#D7E2F0] focus:outline-none focus:ring-2 focus:ring-[#2A76C9]/30" required disabled={!!editingUser} />
+      {modal && (
+        <div className="modal-mask show" onMouseDown={(e) => e.target === e.currentTarget && setModal(null)}>
+          <div className="modal" style={{ maxWidth: 560 }}>
+            <div className="modal-head"><div className="modal-title"><div className="modal-title-bar" />{modal === 'edit' ? (current ? '编辑用户' : '新增用户') : modal === 'roles' ? `分配角色 · ${current?.real_name}` : `重置密码 · ${current?.real_name}`}</div><button onClick={() => setModal(null)}>✕</button></div>
+            <div className="modal-body">
+              {modal === 'edit' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <label>用户名<input style={inputStyle} disabled={!!current} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></label>
+                  {!current && <label>初始密码<input style={inputStyle} type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>}
+                  <label>姓名<input style={inputStyle} value={form.real_name} onChange={(e) => setForm({ ...form, real_name: e.target.value })} /></label>
+                  <label>邮箱<input style={inputStyle} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+                  <label>手机<input style={inputStyle} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
+                  <label>状态<select style={inputStyle} value={String(form.is_active)} onChange={(e) => setForm({ ...form, is_active: e.target.value === 'true' })}><option value="true">启用</option><option value="false">禁用</option></select></label>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#23344D] mb-1">姓名 *</label>
-                  <input type="text" value={formData.real_name} onChange={e => setFormData({ ...formData, real_name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-[#D7E2F0] focus:outline-none focus:ring-2 focus:ring-[#2A76C9]/30" required />
-                </div>
-                {!editingUser && (
-                  <div>
-                    <label className="block text-sm font-medium text-[#23344D] mb-1">密码 *</label>
-                    <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-[#D7E2F0] focus:outline-none focus:ring-2 focus:ring-[#2A76C9]/30" required minLength={6} />
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-[#23344D] mb-1">邮箱</label>
-                  <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-[#D7E2F0] focus:outline-none focus:ring-2 focus:ring-[#2A76C9]/30" />
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#2A76C9] to-[#3D88E0] text-white text-sm font-medium hover:from-[#2362B0] hover:to-[#2A76C9] transition-all">
-                  {editingUser ? '保存' : '创建'}
-                </button>
-                <button type="button" onClick={() => { setShowForm(false); setEditingUser(null) }} className="px-4 py-2 rounded-lg border border-[#D7E2F0] text-[#23344D] text-sm font-medium hover:bg-[#F8FAFD] transition-colors">
-                  取消
-                </button>
-              </div>
-            </form>
+              )}
+              {modal === 'roles' && (
+                <div className="tree-section">{roles.map((role) => <label key={role.id} className="tree-node-perm"><input type="checkbox" checked={form.role_ids.includes(role.id)} onChange={() => setForm({ ...form, role_ids: form.role_ids.includes(role.id) ? form.role_ids.filter((id) => id !== role.id) : [...form.role_ids, role.id] })} />{role.name}<span className="code-tag">{role.code}</span></label>)}</div>
+              )}
+              {modal === 'password' && <label>新密码<input style={inputStyle} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="至少 6 位" /></label>}
+            </div>
+            <div className="modal-foot"><button className="btn btn-outline" onClick={() => setModal(null)}>取消</button><button className="btn btn-primary" onClick={() => void (modal === 'edit' ? saveUser() : modal === 'roles' ? saveRoles() : resetPassword())}>确认</button></div>
           </div>
         </div>
       )}
     </div>
   )
 }
-

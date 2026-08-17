@@ -13,8 +13,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from hetu.shared.enums import DataScope, PermissionType
-
 
 # ===================================通用分页响应==================================
 class PaginatedResponse(BaseModel):
@@ -92,6 +90,7 @@ class UserCreateRequest(BaseModel):
     real_name: str = Field(min_length=1, max_length=64, description="真实姓名")
     email: Optional[str] = Field(None, max_length=128, description="邮箱")
     phone: Optional[str] = Field(None, max_length=20, description="手机号")
+    avatar: Optional[str] = Field(None, max_length=255, description="头像 URL")
     is_active: bool = Field(default=True, description="是否启用")
     is_super: bool = Field(default=False, description="是否超级管理员")
     role_ids: list[int] = Field(default_factory=list, description="角色 ID 列表")

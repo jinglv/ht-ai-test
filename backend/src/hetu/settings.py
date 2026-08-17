@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     DESCRIPTION: str = "企业级AI驱动的测试平台"
 
     # ===================================安全配置=============================
-    SECRET_KEY: str = "change-me-in-production-use-a-strong-random-key"
+    SECRET_KEY: str
 
     # ===================================日期时间格式=============================
     DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"

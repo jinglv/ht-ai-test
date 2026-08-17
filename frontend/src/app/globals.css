@@ -38,14 +38,15 @@
   --color-success: var(--color-success);
   --color-warning: var(--color-warning);
   --color-danger: var(--color-danger);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Noto Sans SC", Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: "Noto Sans SC", Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 /* 自定义滚动条 */
@@ -62,4 +63,43 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-mist);
+}
+
+/* 表单控件 */
+.form-input {
+  width: 100%;
+  border: 1px solid var(--color-smoke);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #fff;
+  color: var(--color-slate);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-cerulean);
+  box-shadow: 0 0 0 3px rgba(42, 118, 201, 0.08);
+}
+
+/* 表格 */
+.data-table-wrap {
+  overflow: auto;
+  flex: 1;
+}
+
+/* 布局 */
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.flex-1 {
+  flex: 1;
+}
+.gap-4 {
+  gap: 16px;
+}
+.min-h-0 {
+  min-height: 0;
 }

@@ -19,9 +19,9 @@
 ### 运行 / 开发
 - Python ≥3.13。用 **uv** 管理依赖与虚拟环境；用 **ruff** 做 lint。所有命令在 `backend/` 下执行。
 - 导入根是 `src/` 下的 `hetu` 包（src 布局）。拉取依赖或修改 `pyproject.toml` 后，需以可编辑模式重装，导入方能解析：`uv pip install -e .`
-- 预期的 ASGI 入口为 `hetu/main:app`（FastAPI + uvicorn，开启 reload）。运行：`uv run uvicorn hetu.main:app --reload`（host/port/reload 也从 `backend/.env` 读取）。
+- 预期的 ASGI 入口为 `main:app`（FastAPI + uvicorn，开启 reload）。运行：`uv run uvicorn main:app --reload`（host/port/reload 也从 `backend/.env` 读取）。
 
-> **脚手架注意：** 后端处于早期脚手架阶段--根 `main.py` 仅有文件头与 docstring 框架（尚无 FastAPI 实现；`src/hetu/main.py` 未创建，故 `hetu.main:app` 入口暂未落地）、`src/hetu/{agents,core,modules,shared}/` 为仅有文件头的 `__init__.py`，且 `pyproject.toml` 中 `name = "backend"`、**无 `[build-system]`/包配置**。PRD 意图是包 `hetu`（可编辑安装 `src/hetu/`）。在 `uv pip install -e .` 与 Tortoise CLI 可用之前，需补上构建后端并修正包名。
+> **脚手架注意：** 后端处于早期脚手架阶段--根 `main.py` 仅有文件头与 docstring 框架（尚无 FastAPI 实现）、`src/hetu/{agents,core,modules,shared}/` 为仅有文件头的 `__init__.py`，且 `pyproject.toml` 中 `name = "backend"`、**无 `[build-system]`/包配置**。PRD 意图是包 `hetu`（可编辑安装 `src/hetu/`）。在 `uv pip install -e .` 与 Tortoise CLI 可用之前，需补上构建后端并修正包名。
 
 ### 代码规范
 `backend/src/hetu/` 与 `backend/tests/` 下每个新建的 `.py` 文件（含 `__init__.py`）必须以如下 PyCharm 风格文件头起始，置于模块 docstring 与导入之前：
